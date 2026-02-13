@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+storage/
+*.egg-info/
+.DS_Store
+node_modules/
+frontend/dist/
+*.wav
+*.mp3
+*.mp4
+*.m4a
+*.log
+.claude/
+ARTICLE.md

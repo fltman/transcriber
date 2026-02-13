@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+celery[redis]
+sqlalchemy
+psycopg2-binary
+pydantic-settings
+python-multipart
+aiofiles
+redis[hiredis]
+pyannote.audio
+speechbrain
+torch
+torchaudio
+requests
+numpy
+scipy
