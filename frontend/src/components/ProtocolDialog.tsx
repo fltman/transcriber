@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Markdown from "react-markdown";
 import { generateProtocol, exportProtocolDocx } from "../api";
 
 interface Props {
@@ -11,6 +12,7 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
   const [protocolText, setProtocolText] = useState("");
   const [generating, setGenerating] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
 
   async function handleGenerate() {
@@ -86,12 +88,38 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
 
         {protocolText && (
           <>
+            {/* Preview / Edit toggle */}
+            <div className="flex bg-slate-800 rounded-lg p-0.5 mb-3 self-start">
+              <button
+                onClick={() => setEditing(false)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+                  !editing ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Forhandsgranska
+              </button>
+              <button
+                onClick={() => setEditing(true)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+                  editing ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Redigera
+              </button>
+            </div>
+
             <div className="flex-1 overflow-y-auto bg-slate-800/30 rounded-xl p-4 mb-4 border border-slate-700/30">
-              <textarea
-                value={protocolText}
-                onChange={(e) => setProtocolText(e.target.value)}
-                className="w-full h-full min-h-[400px] bg-transparent text-sm text-slate-300 font-mono resize-none focus:outline-none"
-              />
+              {editing ? (
+                <textarea
+                  value={protocolText}
+                  onChange={(e) => setProtocolText(e.target.value)}
+                  className="w-full h-full min-h-[400px] bg-transparent text-sm text-slate-300 font-mono resize-none focus:outline-none"
+                />
+              ) : (
+                <div className="prose prose-invert prose-sm max-w-none prose-headings:text-slate-200 prose-p:text-slate-300 prose-strong:text-slate-200 prose-li:text-slate-300 prose-hr:border-slate-700">
+                  <Markdown>{protocolText}</Markdown>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <button

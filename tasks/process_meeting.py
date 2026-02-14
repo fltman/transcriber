@@ -10,7 +10,7 @@ from .celery_app import celery_app
 from .shared import update_progress, align_segments, publish_event
 from database import SessionLocal
 from models import Meeting, Speaker, Segment, Job, MeetingStatus
-from models.job import JobStatus
+from models.job import JobStatus, JobType
 from services.audio_service import AudioService
 from services.whisper_service import WhisperService
 from services.diarization_service import DiarizationService
@@ -248,6 +248,22 @@ def process_meeting_task(self, meeting_id: str, job_id: str):
         db.commit()
 
         update_progress(db, job, meeting, 100, "Klar!")
+
+        # Auto-extract insights (decisions, action items, open questions)
+        try:
+            from .insights_task import extract_insights_task
+            insights_job = Job(
+                meeting_id=meeting_id,
+                job_type=JobType.EXTRACT_INSIGHTS,
+                status=JobStatus.PENDING,
+            )
+            db.add(insights_job)
+            db.commit()
+            extract_insights_task.delay(meeting_id, str(insights_job.id))
+            log.info(f"Queued automatic insights extraction for meeting {meeting_id}")
+        except Exception as e:
+            log.warning(f"Auto insights extraction failed to queue: {e}")
+
         return {"status": "completed", "meeting_id": meeting_id}
 
     except SoftTimeLimitExceeded:
