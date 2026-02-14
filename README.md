@@ -306,6 +306,12 @@ transcriber/
 | `WS` | `/ws/meetings/{id}` | Progress updates |
 | `WS` | `/ws/live/{id}` | Live transcription stream |
 
+## Author
+
+**Anders Bjarby**
+- Web: [anders.bjarby.com](https://anders.bjarby.com)
+- Email: [anders@brattoo.com](mailto:anders@brattoo.com)
+
 ## License
 
 MIT
