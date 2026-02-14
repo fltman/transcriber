@@ -5,6 +5,8 @@ import redis.asyncio as aioredis
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from config import settings
+from database import SessionLocal
+from models import Meeting
 from ws_manager import manager
 
 router = APIRouter()
@@ -12,6 +14,16 @@ router = APIRouter()
 
 @router.websocket("/ws/meetings/{meeting_id}")
 async def meeting_websocket(websocket: WebSocket, meeting_id: str):
+    # Validate meeting exists before accepting connection
+    db = SessionLocal()
+    try:
+        meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+        if not meeting:
+            await websocket.close(code=4004, reason="Meeting not found")
+            return
+    finally:
+        db.close()
+
     await manager.connect(meeting_id, websocket)
 
     # Subscribe to Redis pub/sub for this meeting

@@ -1,12 +1,15 @@
+import shutil
 from pathlib import Path
 
+import redis
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from config import settings as _settings
-from database import init_db, seed_default_actions, get_db
+from database import init_db, seed_default_actions, recover_stale_jobs, get_db, engine
 from models import Meeting
 from api import meetings, speakers, segments, export, websocket, live_websocket, actions, model_settings, encryption
 
@@ -38,6 +41,7 @@ app.include_router(encryption.router)
 def startup():
     init_db()
     seed_default_actions()
+    recover_stale_jobs()
     if not _settings.hf_auth_token or _settings.hf_auth_token == "hf_your_token_here":
         print("WARNING: HF_AUTH_TOKEN not set — speaker diarization will fail. "
               "Set it in .env (get one at https://huggingface.co/settings/tokens)")
@@ -62,7 +66,43 @@ def stream_audio(meeting_id: str, db: Session = Depends(get_db)):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    checks = {}
+
+    # Database
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as e:
+        checks["database"] = f"error: {e}"
+
+    # Redis
+    try:
+        r = redis.Redis.from_url(_settings.redis_url)
+        r.ping()
+        r.close()
+        checks["redis"] = "ok"
+    except Exception as e:
+        checks["redis"] = f"error: {e}"
+
+    # Whisper CLI
+    whisper_path = Path(_settings.whisper_cli_path)
+    checks["whisper_cli"] = "ok" if whisper_path.exists() else f"missing: {whisper_path}"
+
+    # Disk space
+    storage_path = Path(_settings.storage_path)
+    storage_path.mkdir(parents=True, exist_ok=True)
+    disk = shutil.disk_usage(storage_path)
+    free_gb = disk.free / (1024 ** 3)
+    checks["disk_free_gb"] = round(free_gb, 1)
+    if free_gb < 1:
+        checks["disk"] = "warning: less than 1 GB free"
+
+    all_ok = all(
+        v == "ok" for k, v in checks.items()
+        if k not in ("disk_free_gb",)
+    )
+    return {"status": "ok" if all_ok else "degraded", **checks}
 
 
 @app.get("/api/settings")

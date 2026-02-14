@@ -1,9 +1,17 @@
+from datetime import datetime
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from config import settings
 
-engine = create_engine(settings.database_url)
+engine = create_engine(
+    settings.database_url,
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_pre_ping=True,  # verify connections before use
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -61,6 +69,35 @@ def init_db():
             except Exception:
                 pass
         conn.commit()
+
+
+def recover_stale_jobs():
+    """Mark any jobs stuck in RUNNING/PENDING as FAILED on startup.
+
+    If the server restarts while a Celery task was running, the job
+    status is stuck. This cleans them up so the user can retry.
+    """
+    from models.job import Job, JobStatus
+    from models import Meeting, MeetingStatus
+
+    db = SessionLocal()
+    try:
+        stale_jobs = db.query(Job).filter(
+            Job.status.in_([JobStatus.RUNNING, JobStatus.PENDING])
+        ).all()
+        for job in stale_jobs:
+            job.status = JobStatus.FAILED
+            job.error = "Task interrupted by server restart. Please retry."
+            job.completed_at = datetime.utcnow()
+            # Also reset the meeting status if it was stuck in PROCESSING/FINALIZING
+            meeting = db.query(Meeting).filter(Meeting.id == job.meeting_id).first()
+            if meeting and meeting.status in (MeetingStatus.PROCESSING, MeetingStatus.FINALIZING):
+                meeting.status = MeetingStatus.FAILED
+        if stale_jobs:
+            db.commit()
+            print(f"[Startup] Recovered {len(stale_jobs)} stale job(s)")
+    finally:
+        db.close()
 
 
 def seed_default_actions():

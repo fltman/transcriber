@@ -24,7 +24,7 @@ class AudioService:
             "-ac", "1",
             output_path,
         ]
-        subprocess.run(cmd, capture_output=True, check=True)
+        subprocess.run(cmd, capture_output=True, check=True, timeout=600)  # 10 min
         return output_path
 
     def get_duration(self, filepath: str) -> float:
@@ -36,7 +36,7 @@ class AudioService:
             "-show_format",
             filepath,
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=60)
         info = json.loads(result.stdout)
         return float(info["format"]["duration"])
 
@@ -52,5 +52,5 @@ class AudioService:
             "-ac", "1",
             output_path,
         ]
-        subprocess.run(cmd, capture_output=True, check=True)
+        subprocess.run(cmd, capture_output=True, check=True, timeout=300)  # 5 min
         return output_path

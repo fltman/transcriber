@@ -308,6 +308,14 @@ class LiveTranscriptionSession:
 
 @router.websocket("/ws/live/{meeting_id}")
 async def live_websocket(websocket: WebSocket, meeting_id: str):
+    # Verify meeting exists and is in live mode BEFORE accepting
+    db = SessionLocal()
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting or meeting.mode != "live":
+        await websocket.close(code=4000, reason="Meeting not found or not in live mode")
+        db.close()
+        return
+
     await websocket.accept()
 
     loop = asyncio.get_event_loop()
@@ -316,14 +324,6 @@ async def live_websocket(websocket: WebSocket, meeting_id: str):
     r = aioredis.from_url(settings.redis_url)
     pubsub = r.pubsub()
     await pubsub.subscribe(f"meeting:{meeting_id}")
-
-    # Verify meeting exists and is in live mode
-    db = SessionLocal()
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting or meeting.mode != "live":
-        await websocket.close(code=4000, reason="Meeting not found or not in live mode")
-        db.close()
-        return
 
     meeting_path = get_meeting_path(meeting_id)
     # Get whisper model for live transcription from presets

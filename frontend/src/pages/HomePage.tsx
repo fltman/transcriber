@@ -50,6 +50,9 @@ export default function HomePage() {
   const animFrameRef = useRef<number>(0);
   const [inputMode, setInputMode] = useState<"file" | "record" | "live">("file");
 
+  // Error feedback
+  const [error, setError] = useState<string | null>(null);
+
   // Action results expansion
   const [expandedMeetingId, setExpandedMeetingId] = useState<string | null>(null);
   const [meetingResults, setMeetingResults] = useState<Record<string, ActionResult[]>>({});
@@ -95,11 +98,13 @@ export default function HomePage() {
       if (maxSpeakers) form.append("max_speakers", maxSpeakers);
 
       const meeting = await createMeeting(form);
+      setError(null);
       setShowUpload(false);
       resetDialog();
       navigate(`/meetings/${meeting.id}`);
-    } catch {
-      // show inline error instead of alert
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || err?.message || "Upload failed";
+      setError(msg);
     } finally {
       setUploading(false);
     }
@@ -110,11 +115,13 @@ export default function HomePage() {
     setUploading(true);
     try {
       const meeting = await createLiveMeeting(title.trim());
+      setError(null);
       setShowUpload(false);
       resetDialog();
       navigate(`/meetings/${meeting.id}`);
-    } catch {
-      // error
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || err?.message || "Failed to start live session";
+      setError(msg);
     } finally {
       setUploading(false);
     }
@@ -128,13 +135,18 @@ export default function HomePage() {
     setRecording(false);
     setRecordingTime(0);
     setInputMode("file");
+    setError(null);
   }
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
     if (!window.confirm("Delete this recording? This cannot be undone.")) return;
-    await deleteMeeting(id);
-    loadMeetings();
+    try {
+      await deleteMeeting(id);
+      loadMeetings();
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Failed to delete meeting");
+    }
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -195,8 +207,11 @@ export default function HomePage() {
       timerRef.current = window.setInterval(() => {
         setRecordingTime((t) => t + 1);
       }, 1000);
-    } catch {
-      // microphone denied
+    } catch (err: any) {
+      const msg = err?.name === "NotAllowedError"
+        ? "Microphone access denied. Please allow microphone access in your browser settings."
+        : err?.message || "Failed to start recording";
+      setError(msg);
     }
   }, [title]);
 
@@ -469,6 +484,16 @@ export default function HomePage() {
               </details>
             )}
 
+            {/* Error message */}
+            {error && (
+              <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-start gap-2">
+                <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex justify-end gap-3">
               <button
@@ -519,6 +544,18 @@ export default function HomePage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Error banner (for delete errors outside dialog) */}
+      {error && !showUpload && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300 ml-3">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 

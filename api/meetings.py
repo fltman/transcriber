@@ -1,3 +1,4 @@
+import re
 import shutil
 from pathlib import Path
 
@@ -15,6 +16,11 @@ from tasks.process_meeting import process_meeting_task
 
 router = APIRouter(prefix="/api/meetings", tags=["meetings"])
 
+# Upload constraints
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024 * 1024  # 5 GB
+ALLOWED_EXTENSIONS = {".mp3", ".wav", ".mp4", ".m4a", ".webm", ".ogg", ".flac", ".aac", ".wma", ".mov", ".avi", ".mkv"}
+MAX_TITLE_LENGTH = 500
+
 
 @router.get("")
 def list_meetings(db: Session = Depends(get_db)):
@@ -30,9 +36,34 @@ async def create_meeting(
     max_speakers: int = Form(None),
     db: Session = Depends(get_db),
 ):
+    # Validate title
+    title = title.strip()[:MAX_TITLE_LENGTH]
+    if not title:
+        raise HTTPException(400, "Title is required")
+
+    # Validate file extension
+    filename = file.filename or "upload.mp4"
+    ext = Path(filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            400,
+            f"Unsupported file type '{ext}'. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+        )
+
+    # Sanitize filename — strip path components and special characters
+    safe_filename = re.sub(r'[^\w.\-]', '_', Path(filename).name)
+
+    # Validate speaker counts
+    if min_speakers is not None and min_speakers < 1:
+        raise HTTPException(400, "min_speakers must be at least 1")
+    if max_speakers is not None and max_speakers < 1:
+        raise HTTPException(400, "max_speakers must be at least 1")
+    if min_speakers and max_speakers and min_speakers > max_speakers:
+        raise HTTPException(400, "min_speakers cannot exceed max_speakers")
+
     meeting = Meeting(
         title=title,
-        original_filename=file.filename,
+        original_filename=safe_filename,
         status=MeetingStatus.UPLOADED,
         min_speakers=min_speakers,
         max_speakers=max_speakers,
@@ -40,13 +71,22 @@ async def create_meeting(
     db.add(meeting)
     db.flush()
 
-    # Save uploaded file
+    # Save uploaded file with size limit
     meeting_dir = get_meeting_path(meeting.id)
-    ext = Path(file.filename).suffix or ".mp4"
     upload_path = str(meeting_dir / f"original{ext}")
 
+    total_size = 0
     with open(upload_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+        while chunk := await file.read(1024 * 1024):  # 1MB chunks
+            total_size += len(chunk)
+            if total_size > MAX_UPLOAD_SIZE:
+                # Clean up partial file
+                f.close()
+                Path(upload_path).unlink(missing_ok=True)
+                shutil.rmtree(meeting_dir, ignore_errors=True)
+                db.rollback()
+                raise HTTPException(413, f"File too large. Maximum size is {MAX_UPLOAD_SIZE // (1024**3)} GB")
+            f.write(chunk)
 
     meeting.audio_filepath = upload_path
     db.commit()
@@ -80,12 +120,25 @@ def delete_meeting(meeting_id: str, db: Session = Depends(get_db)):
 
 @router.post("/{meeting_id}/process")
 def start_processing(meeting_id: str, db: Session = Depends(get_db)):
+    from sqlalchemy import update
+
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(404, "Meeting not found")
 
     if meeting.status == MeetingStatus.PROCESSING:
         raise HTTPException(400, "Already processing")
+
+    # Atomic status transition to prevent duplicate processing
+    rows = db.execute(
+        update(Meeting)
+        .where(Meeting.id == meeting_id)
+        .where(Meeting.status != MeetingStatus.PROCESSING)
+        .values(status=MeetingStatus.PROCESSING)
+    )
+    if rows.rowcount == 0:
+        db.rollback()
+        raise HTTPException(409, "Meeting is already being processed")
 
     # Create job
     job = Job(

@@ -25,15 +25,27 @@ export function useLiveRecording({ meetingId, deviceId, onFinalizeComplete }: Us
   const animFrameRef = useRef<number>(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const isRecordingRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const reconnectTimerRef = useRef<number>(0);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
 
   // Clean up on unmount
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
+      clearTimeout(reconnectTimerRef.current);
       cleanup();
     };
   }, []);
 
   function cleanup() {
+    clearTimeout(reconnectTimerRef.current);
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
     }
@@ -48,6 +60,7 @@ export function useLiveRecording({ meetingId, deviceId, onFinalizeComplete }: Us
     clearInterval(chunkIntervalRef.current);
     if (wsRef.current) {
       wsRef.current.close();
+      wsRef.current = null;
     }
   }
 
@@ -115,14 +128,18 @@ export function useLiveRecording({ meetingId, deviceId, onFinalizeComplete }: Us
     };
 
     ws.onclose = () => {
-      // Reconnect if still recording
-      if (isRecording) {
-        setTimeout(() => connectWebSocket(), 2000);
+      // Reconnect if still recording AND component is still mounted
+      if (isRecordingRef.current && isMountedRef.current) {
+        reconnectTimerRef.current = window.setTimeout(() => {
+          if (isMountedRef.current && isRecordingRef.current) {
+            connectWebSocket();
+          }
+        }, 2000);
       }
     };
 
     return ws;
-  }, [meetingId, isRecording]);
+  }, [meetingId]);
 
   const start = useCallback(async () => {
     // Connect WebSocket first

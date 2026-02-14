@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
 
+from celery.exceptions import SoftTimeLimitExceeded
+
 from .celery_app import celery_app
 from .shared import update_progress, align_segments, publish_event
 from database import SessionLocal
@@ -182,6 +184,24 @@ def process_meeting_task(self, meeting_id: str, job_id: str):
 
         update_progress(db, job, meeting, 100, "Klar!")
         return {"status": "completed", "meeting_id": meeting_id}
+
+    except SoftTimeLimitExceeded:
+        db.rollback()
+        error_msg = "Task exceeded time limit (55 minutes). Try a shorter recording."
+        job = db.query(Job).filter(Job.id == job_id).first()
+        meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+        if job:
+            job.status = JobStatus.FAILED
+            job.error = error_msg
+            job.completed_at = datetime.utcnow()
+        if meeting:
+            meeting.status = MeetingStatus.FAILED
+        db.commit()
+        try:
+            publish_event(meeting_id, {"type": "error", "error": error_msg})
+        except Exception:
+            pass
+        return {"error": error_msg}
 
     except Exception as e:
         db.rollback()
