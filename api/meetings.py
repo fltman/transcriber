@@ -7,8 +7,10 @@ from sqlalchemy.orm import Session
 
 from pydantic import BaseModel
 
+from sqlalchemy import func
+
 from database import get_db
-from models import Meeting, Job, MeetingStatus
+from models import Meeting, Job, MeetingStatus, Speaker, Segment
 from models.meeting import MeetingMode, RecordingStatus
 from models.job import JobType, JobStatus
 from config import get_meeting_path
@@ -24,8 +26,28 @@ MAX_TITLE_LENGTH = 500
 
 @router.get("")
 def list_meetings(db: Session = Depends(get_db)):
-    meetings = db.query(Meeting).order_by(Meeting.created_at.desc()).all()
-    return [m.to_dict() for m in meetings]
+    speaker_counts = (
+        db.query(Speaker.meeting_id, func.count().label("count"))
+        .group_by(Speaker.meeting_id)
+        .subquery()
+    )
+    segment_counts = (
+        db.query(Segment.meeting_id, func.count().label("count"))
+        .group_by(Segment.meeting_id)
+        .subquery()
+    )
+    rows = (
+        db.query(
+            Meeting,
+            func.coalesce(speaker_counts.c.count, 0),
+            func.coalesce(segment_counts.c.count, 0),
+        )
+        .outerjoin(speaker_counts, Meeting.id == speaker_counts.c.meeting_id)
+        .outerjoin(segment_counts, Meeting.id == segment_counts.c.meeting_id)
+        .order_by(Meeting.created_at.desc())
+        .all()
+    )
+    return [m.to_dict(speaker_count=sc, segment_count=sgc) for m, sc, sgc in rows]
 
 
 @router.post("")

@@ -16,6 +16,7 @@ from models.meeting import RecordingStatus
 from model_config import get_model_config
 from services.whisper_service import WhisperService
 from services.embedding_service import EmbeddingService
+from services.speaker_id_service import SPEAKER_COLORS
 from tasks.shared import publish_event
 
 router = APIRouter()
@@ -23,12 +24,6 @@ router = APIRouter()
 SAMPLE_RATE = 16000
 SPEAKER_THRESHOLD = settings.live_speaker_threshold
 MIN_SEGMENT_DURATION = settings.live_min_segment_duration
-
-# Speaker colors palette (same as speaker_id_service)
-SPEAKER_COLORS = [
-    "#6366f1", "#ec4899", "#10b981", "#f59e0b", "#3b82f6",
-    "#ef4444", "#8b5cf6", "#14b8a6", "#f97316", "#06b6d4",
-]
 
 
 class LiveTranscriptionSession:

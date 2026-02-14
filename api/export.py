@@ -1,8 +1,9 @@
 import io
+import re
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse, JSONResponse, StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
 from models import Meeting, Segment
@@ -11,6 +12,12 @@ from models.action import Action, ActionResult
 router = APIRouter(prefix="/api", tags=["export"])
 
 UNKNOWN_SPEAKER = "Okand"
+
+
+def _safe_filename(name: str) -> str:
+    """Sanitize a string for use in Content-Disposition filename."""
+    safe = re.sub(r'["\\/:<>|?*\x00-\x1f]', '_', name)
+    return safe.strip('. ') or "export"
 
 
 def format_srt_time(seconds: float) -> str:
@@ -51,6 +58,7 @@ def export_meeting(
 
     segments = (
         db.query(Segment)
+        .options(joinedload(Segment.speaker))
         .filter(Segment.meeting_id == meeting_id)
         .order_by(Segment.order)
         .all()
@@ -87,7 +95,7 @@ def _export_srt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     return PlainTextResponse(
         content,
         headers={
-            "Content-Disposition": f'attachment; filename="{meeting.title}.srt"',
+            "Content-Disposition": f'attachment; filename="{_safe_filename(meeting.title)}.srt"',
         },
     )
 
@@ -104,7 +112,7 @@ def _export_vtt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     return PlainTextResponse(
         content,
         headers={
-            "Content-Disposition": f'attachment; filename="{meeting.title}.vtt"',
+            "Content-Disposition": f'attachment; filename="{_safe_filename(meeting.title)}.vtt"',
         },
     )
 
@@ -125,7 +133,7 @@ def _export_txt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     return PlainTextResponse(
         content,
         headers={
-            "Content-Disposition": f'attachment; filename="{meeting.title}.txt"',
+            "Content-Disposition": f'attachment; filename="{_safe_filename(meeting.title)}.txt"',
         },
     )
 
@@ -149,7 +157,7 @@ def _export_json(meeting: Meeting, segments: list[Segment]) -> JSONResponse:
     return JSONResponse(
         data,
         headers={
-            "Content-Disposition": f'attachment; filename="{meeting.title}.json"',
+            "Content-Disposition": f'attachment; filename="{_safe_filename(meeting.title)}.json"',
         },
     )
 
@@ -175,7 +183,7 @@ def _export_md(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     return PlainTextResponse(
         content,
         headers={
-            "Content-Disposition": f'attachment; filename="{meeting.title}.md"',
+            "Content-Disposition": f'attachment; filename="{_safe_filename(meeting.title)}.md"',
             "Content-Type": "text/markdown; charset=utf-8",
         },
     )
@@ -211,7 +219,7 @@ def _export_docx(meeting: Meeting, segments: list[Segment]) -> StreamingResponse
         buf,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={
-            "Content-Disposition": f'attachment; filename="{meeting.title}.docx"',
+            "Content-Disposition": f'attachment; filename="{_safe_filename(meeting.title)}.docx"',
         },
     )
 
@@ -283,7 +291,7 @@ def _export_pdf(meeting: Meeting, segments: list[Segment]) -> StreamingResponse:
         buf,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="{meeting.title}.pdf"',
+            "Content-Disposition": f'attachment; filename="{_safe_filename(meeting.title)}.pdf"',
         },
     )
 
@@ -308,7 +316,7 @@ def export_action_result(
     meeting = db.query(Meeting).filter(Meeting.id == result.meeting_id).first()
     meeting_title = meeting.title if meeting else "Meeting"
 
-    filename = f"{meeting_title} - {action_name}"
+    filename = _safe_filename(f"{meeting_title} - {action_name}")
 
     if format == "txt":
         return PlainTextResponse(

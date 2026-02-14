@@ -1,4 +1,5 @@
 import logging
+import shutil
 from datetime import datetime
 
 from sqlalchemy import create_engine, text
@@ -99,6 +100,29 @@ def recover_stale_jobs():
         if stale_jobs:
             db.commit()
             log.info(f"Recovered {len(stale_jobs)} stale job(s)")
+    finally:
+        db.close()
+
+
+def cleanup_orphaned_storage():
+    """Remove storage directories for meetings that no longer exist in the DB."""
+    from config import get_storage_path
+    from models import Meeting
+
+    storage = get_storage_path()
+    if not storage.exists():
+        return
+
+    db = SessionLocal()
+    try:
+        meeting_ids = {row[0] for row in db.query(Meeting.id).all()}
+        removed = 0
+        for d in storage.iterdir():
+            if d.is_dir() and d.name not in meeting_ids:
+                shutil.rmtree(d, ignore_errors=True)
+                removed += 1
+        if removed:
+            log.info(f"Cleaned up {removed} orphaned storage directory(s)")
     finally:
         db.close()
 

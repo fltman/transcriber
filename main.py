@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from config import settings as _settings
-from database import init_db, seed_default_actions, recover_stale_jobs, get_db, engine
+from database import init_db, seed_default_actions, recover_stale_jobs, cleanup_orphaned_storage, get_db, engine
 from models import Meeting
 from api import meetings, speakers, segments, export, websocket, live_websocket, actions, model_settings, encryption
 
@@ -42,6 +42,7 @@ def startup():
     init_db()
     seed_default_actions()
     recover_stale_jobs()
+    cleanup_orphaned_storage()
     import logging
     _log = logging.getLogger(__name__)
     if not _settings.hf_auth_token or _settings.hf_auth_token == "hf_your_token_here":

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
-from models import Segment
+from models import Meeting, Segment
 
 router = APIRouter(prefix="/api", tags=["segments"])
 
@@ -20,6 +20,7 @@ class UpdateSegmentSpeakerRequest(BaseModel):
 def list_segments(meeting_id: str, db: Session = Depends(get_db)):
     segments = (
         db.query(Segment)
+        .options(joinedload(Segment.speaker))
         .filter(Segment.meeting_id == meeting_id)
         .order_by(Segment.order)
         .all()
@@ -33,6 +34,10 @@ def update_segment_text(segment_id: str, req: UpdateSegmentTextRequest, db: Sess
     if not segment:
         raise HTTPException(404, "Segment not found")
 
+    meeting = db.query(Meeting).filter(Meeting.id == segment.meeting_id).first()
+    if meeting and meeting.is_encrypted:
+        raise HTTPException(400, "Cannot edit segments while meeting is encrypted. Decrypt first.")
+
     segment.text = req.text
     segment.is_edited = True
     db.commit()
@@ -44,6 +49,10 @@ def update_segment_speaker(segment_id: str, req: UpdateSegmentSpeakerRequest, db
     segment = db.query(Segment).filter(Segment.id == segment_id).first()
     if not segment:
         raise HTTPException(404, "Segment not found")
+
+    meeting = db.query(Meeting).filter(Meeting.id == segment.meeting_id).first()
+    if meeting and meeting.is_encrypted:
+        raise HTTPException(400, "Cannot edit segments while meeting is encrypted. Decrypt first.")
 
     segment.speaker_id = req.speaker_id
     db.commit()

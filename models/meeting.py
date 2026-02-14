@@ -58,7 +58,7 @@ class Meeting(Base):
     segments = relationship("Segment", back_populates="meeting", cascade="all, delete-orphan", order_by="Segment.order")
     jobs = relationship("Job", back_populates="meeting", cascade="all, delete-orphan")
 
-    def to_dict(self, include_segments: bool = False) -> dict:
+    def to_dict(self, include_segments: bool = False, speaker_count: int | None = None, segment_count: int | None = None) -> dict:
         d = {
             "id": self.id,
             "title": self.title,
@@ -73,8 +73,8 @@ class Meeting(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "is_encrypted": bool(self.is_encrypted),
-            "speaker_count": len(self.speakers) if self.speakers else 0,
-            "segment_count": len(self.segments) if self.segments else 0,
+            "speaker_count": speaker_count if speaker_count is not None else (len(self.speakers) if self.speakers else 0),
+            "segment_count": segment_count if segment_count is not None else (len(self.segments) if self.segments else 0),
         }
         if include_segments:
             d["speakers"] = [s.to_dict() for s in self.speakers]
