@@ -1,0 +1,59 @@
+TRANSCRIBER - FEATURES
+
+Upload, record or live-transcribe meetings and get a complete
+transcript with speakers identified by name.
+
+TRANSCRIPTION
+- Upload audio or video files (MP3, MP4, WAV, WebM, M4A)
+- Record directly in the browser with a visual audio level meter
+- Choose which microphone to use, or capture computer audio
+- Live mode: see the transcript appear word by word as you speak
+- Optimized for Swedish using locally running AI models
+
+SPEAKER IDENTIFICATION
+- Automatically detects who is speaking and when
+- Identifies speakers by name from meeting introductions
+- Works even without introductions (labels speakers as Participant 1, 2, etc.)
+- During live recording, speakers are identified progressively
+
+EDITING
+- Click any line to correct the text
+- Move lines between speakers if they were assigned wrong
+- Rename speakers, change their colors, or merge two into one
+- Original text is always preserved alongside your edits
+
+PLAYBACK
+- Click any line to hear that part of the recording
+- The transcript scrolls along automatically during playback
+
+EXPORT
+- Download transcripts in 7 formats: SRT, WebVTT, plain text,
+  Markdown, JSON, Word (DOCX), and PDF
+- Each format includes speaker names and timestamps
+
+SMART ACTIONS
+- Run AI-powered analyses on your transcripts: summaries, action
+  item lists, meeting minutes, or any custom prompt you define
+- Save your favorite prompts as reusable actions
+- Browse and export results from previous runs
+
+ENCRYPTION
+- Protect sensitive transcripts with a password
+- Encrypted meetings require the password to view or export
+
+SETTINGS
+- Choose between different AI models for each task
+- Supports both cloud models and locally running models
+- Settings are saved automatically
+
+LIVE RECORDING
+- Start a live session and see transcription in real time
+- After you stop, the system automatically reprocesses with a
+  higher-quality model for the best possible result
+- Speaker names are refined in the background as more context
+  becomes available
+
+INTERFACE
+- Clean dark interface with meeting list and status overview
+- Three ways to start: upload a file, record, or go live
+- Progress bar shows each step during processing

@@ -1,0 +1,59 @@
+TRANSCRIBER - FUNKTIONER
+
+Ladda upp, spela in eller livetranskribera möten och få ett
+komplett transkript med talare identifierade vid namn.
+
+TRANSKRIBERING
+- Ladda upp ljud- eller videofiler (MP3, MP4, WAV, WebM, M4A)
+- Spela in direkt i webbläsaren med visuell ljudnivåmätare
+- Välj vilken mikrofon som ska användas, eller fånga datorljud
+- Live-läge: se transkriptet växa fram ord för ord medan du talar
+- Optimerat för svenska med lokalt körande AI-modeller
+
+TALARIDENTIFIERING
+- Upptäcker automatiskt vem som talar och när
+- Identifierar talare vid namn utifrån mötesinledningar
+- Fungerar även utan introduktioner (märker talare som Deltagare 1, 2 osv.)
+- Under liveinspelning identifieras talare successivt
+
+REDIGERING
+- Klicka på valfri rad för att rätta texten
+- Flytta rader mellan talare om de tilldelats fel
+- Byt namn på talare, ändra färger eller slå ihop två till en
+- Originaltexten bevaras alltid bredvid dina ändringar
+
+UPPSPELNING
+- Klicka på valfri rad för att lyssna på den delen av inspelningen
+- Transkriptet rullar med automatiskt under uppspelning
+
+EXPORT
+- Ladda ner transkript i 7 format: SRT, WebVTT, ren text,
+  Markdown, JSON, Word (DOCX) och PDF
+- Alla format innehåller talarnamn och tidsstämplar
+
+SMARTA ÅTGÄRDER
+- Kör AI-drivna analyser på dina transkript: sammanfattningar,
+  åtgärdslistor, mötesprotokoll eller valfri egen prompt
+- Spara dina favoritpromptar som återanvändbara åtgärder
+- Bläddra bland och exportera resultat från tidigare körningar
+
+KRYPTERING
+- Skydda känsliga transkript med lösenord
+- Krypterade möten kräver lösenord för att visa eller exportera
+
+INSTÄLLNINGAR
+- Välj mellan olika AI-modeller för varje uppgift
+- Stöd för både molnmodeller och lokalt körande modeller
+- Inställningar sparas automatiskt
+
+LIVEINSPELNING
+- Starta en livesession och se transkriberingen i realtid
+- När du stoppar bearbetas inspelningen automatiskt om med en
+  modell av högre kvalitet för bästa möjliga resultat
+- Talarnamn förfinas i bakgrunden allt eftersom mer kontext
+  blir tillgängligt
+
+GRÄNSSNITT
+- Rent mörkt gränssnitt med möteslista och statusöversikt
+- Tre sätt att starta: ladda upp en fil, spela in eller gå live
+- Förloppsindikator visar varje steg under bearbetning
