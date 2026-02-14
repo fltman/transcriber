@@ -7,6 +7,8 @@
 - **Audio source selection** - Choose between available microphones or capture system/desktop audio via screen share
 - **Live transcription** - Real-time WebSocket-based transcription that streams segments as you speak
 - **Swedish speech recognition** - whisper.cpp with KB-LAB Swedish models, Metal GPU accelerated on Apple Silicon
+- **Vocabulary priming** - Provide domain-specific terms to improve transcription accuracy for names, jargon, and abbreviations
+- **Default vocabulary** - Set global vocabulary in preferences, automatically applied to all new transcriptions
 - **Automatic audio extraction** - FFmpeg converts any input to 16kHz mono WAV
 
 ## Speaker Identification
@@ -14,6 +16,9 @@
 - **Pyannote.audio 3.1 diarization** - Automatic speaker separation with configurable min/max speaker count
 - **Intro-based identification** - LLM iteratively analyzes meeting introductions to extract speaker names
 - **Voice embedding matching** - SpeechBrain ECAPA-TDNN embeddings with cosine similarity to map names to voices
+- **Persistent voice profiles** - Save speaker voice embeddings for automatic recognition across meetings
+- **Voice profile management** - List, delete, and toggle voice profile matching in Settings > Preferences
+- **Running average embeddings** - Profile accuracy improves with each meeting as embeddings are averaged
 - **Fallback labeling** - Speakers labeled as "Deltagare 1", "Deltagare 2" when no introductions are detected
 - **Live speaker assignment** - Provisional centroid-based speaker detection during live recording
 - **Polish passes** - Post-recording refinement with speaker merging and LLM-powered naming
@@ -30,6 +35,7 @@
 ## Audio Playback
 
 - **Synced playback** - Click any segment to jump to that point in the audio
+- **Play on hover** - Hover over timestamps to reveal play buttons for instant playback from any segment
 - **Auto-scroll** - Transcript follows playback position automatically
 - **Timestamps** - MM:SS timestamps displayed on each segment
 
@@ -75,11 +81,33 @@
 - **Auto-finalization** - Full-quality re-processing triggered automatically after recording stops
 - **Progressive speaker refinement** - Speaker names improved in background polish passes
 
+## Search
+
+- **Full-text search** - Search across all meeting transcripts from the dashboard
+- **PostgreSQL GIN index** - Fast text search with `to_tsvector` and ILIKE fallback
+- **Results grouped by meeting** - Search results organized by meeting with matching segments
+- **Click to navigate** - Jump directly to a matching segment in any meeting
+
+## Selective Reprocessing
+
+- **Re-diarize** - Re-run speaker separation without re-transcribing (keeps transcript, reassigns speakers)
+- **Re-identify speakers** - Re-run speaker identification without re-transcribing or re-diarizing
+- **Full reprocess** - Complete pipeline from scratch
+- **Edit preservation** - Manually edited segments are preserved during reprocessing
+
+## Preferences
+
+- **Default vocabulary** - Global vocabulary terms applied to all new transcriptions
+- **Speaker profiles toggle** - Enable or disable voice profile matching per organization
+- **Voice profile management** - List and delete saved voice profiles with confirmation
+
 ## UI
 
 - **Meeting dashboard** - List of all meetings with status badges, duration, speaker count
+- **Full-text search bar** - Search across all transcripts from the dashboard
 - **Three input modes** - Upload, Record, Live tabs in the new transcription dialog
 - **Real-time progress** - Step-by-step progress bar during processing
+- **Reprocess menu** - Dropdown with re-diarize, re-identify, and full reprocess options
 - **Dark theme** - Slate/violet dark UI throughout
 - **Responsive layout** - Sidebar with speakers/actions, main transcript area
 

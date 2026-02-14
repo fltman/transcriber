@@ -14,6 +14,7 @@ class JobType(str, enum.Enum):
     FINALIZE_LIVE = "finalize_live"
     REDIARIZE = "rediarize"
     REIDENTIFY = "reidentify"
+    EXTRACT_INSIGHTS = "extract_insights"
 
 
 class JobStatus(str, enum.Enum):

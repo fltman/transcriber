@@ -44,7 +44,7 @@ def init_db():
                 log.debug(f"Enum value meetingstatus.{val}: {e}")
 
         # Add new JobType enum values
-        for val in ("POLISH_PASS", "FINALIZE_LIVE", "REDIARIZE", "REIDENTIFY"):
+        for val in ("POLISH_PASS", "FINALIZE_LIVE", "REDIARIZE", "REIDENTIFY", "EXTRACT_INSIGHTS"):
             try:
                 conn.execute(text(
                     f"ALTER TYPE jobtype ADD VALUE IF NOT EXISTS '{val}'"

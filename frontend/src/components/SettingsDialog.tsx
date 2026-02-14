@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ModelPreset, ModelSettings } from "../types";
-import { getModelSettings, updateModelSettings, getPreferences, updatePreferences, listSpeakerProfiles, deleteSpeakerProfile } from "../api";
-import type { Preferences, SpeakerProfile } from "../api";
+import { getModelSettings, updateModelSettings, getPreferences, updatePreferences, listSpeakerProfiles, deleteSpeakerProfile, listVocabulary, deleteVocabularyEntry } from "../api";
+import type { Preferences, SpeakerProfile, VocabularyEntry } from "../api";
 
 interface Props {
   onClose: () => void;
@@ -27,6 +27,7 @@ export default function SettingsDialog({ onClose }: Props) {
   const [defaultVocab, setDefaultVocab] = useState("");
   const [profilesEnabled, setProfilesEnabled] = useState(true);
   const [profiles, setProfiles] = useState<SpeakerProfile[]>([]);
+  const [learnedVocab, setLearnedVocab] = useState<VocabularyEntry[]>([]);
 
   useEffect(() => {
     loadSettings();
@@ -46,6 +47,8 @@ export default function SettingsDialog({ onClose }: Props) {
     setProfilesEnabled(p.speaker_profiles_enabled);
     const profileList = await listSpeakerProfiles();
     setProfiles(profileList);
+    const vocab = await listVocabulary();
+    setLearnedVocab(vocab);
   }
 
   async function handleSave() {
@@ -158,6 +161,40 @@ export default function SettingsDialog({ onClose }: Props) {
                 placeholder="Names, technical terms, abbreviations..."
               />
             </div>
+
+            {/* Learned vocabulary */}
+            {learnedVocab.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Learned vocabulary
+                </label>
+                <p className="text-xs text-slate-500 mb-1.5">
+                  Terms automatically learned from your transcript corrections.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {learnedVocab.map((v) => (
+                    <span
+                      key={v.id}
+                      className="inline-flex items-center gap-1 bg-slate-800/50 rounded-md px-2 py-1 text-xs text-slate-300 group"
+                    >
+                      {v.term}
+                      <span className="text-[9px] text-slate-600">{v.frequency}x</span>
+                      <button
+                        onClick={async () => {
+                          await deleteVocabularyEntry(v.id);
+                          setLearnedVocab(learnedVocab.filter((e) => e.id !== v.id));
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition ml-0.5"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Speaker profiles toggle */}
             <div>

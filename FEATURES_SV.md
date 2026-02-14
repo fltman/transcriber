@@ -7,6 +7,8 @@
 - **Val av ljudkälla** - Välj mellan tillgängliga mikrofoner eller fånga systemljud/skrivbordsljud via skärmdelning
 - **Livetranskribering** - WebSocket-baserad realtidstranskribering som strömmar segment medan du talar
 - **Svensk taligenkänning** - whisper.cpp med KB-LAB:s svenska modeller, Metal GPU-accelererat på Apple Silicon
+- **Vokabulärpriming** - Ange domänspecifika termer för att förbättra transkriberingsnoggrannheten för namn, facktermer och förkortningar
+- **Standardvokabulär** - Ange globalt vokabulär i inställningar som automatiskt tillämpas på alla nya transkriberingar
 - **Automatisk ljudextrahering** - FFmpeg konverterar alla format till 16 kHz mono WAV
 
 ## Talaridentifiering
@@ -14,6 +16,9 @@
 - **Pyannote.audio 3.1-diarisering** - Automatisk talarseparering med konfigurerbart min/max antal talare
 - **Introduktionsbaserad identifiering** - LLM analyserar iterativt mötesinledningar för att extrahera talarnamn
 - **Röstavtrycksmatchning** - SpeechBrain ECAPA-TDNN-inbäddningar med cosinuslikhet för att koppla namn till röster
+- **Beständiga röstprofiler** - Spara röstavtryck för automatisk igenkänning av talare mellan möten
+- **Hantering av röstprofiler** - Lista, radera och aktivera/avaktivera röstprofilmatchning i Inställningar > Preferenser
+- **Löpande medelvärdeinbäddningar** - Profilnoggrannheten förbättras med varje möte allteftersom inbäddningar medelvärdesberäknas
 - **Reservetikettering** - Talare märks som "Deltagare 1", "Deltagare 2" när inga introduktioner upptäcks
 - **Livtilldelning av talare** - Provisorisk centroidbaserad talardetektering under liveinspelning
 - **Poleringspass** - Efterbearbetning med sammanslagning av talare och LLM-driven namngivning
@@ -30,6 +35,7 @@
 ## Ljuduppspelning
 
 - **Synkroniserad uppspelning** - Klicka på ett segment för att hoppa till den punkten i ljudet
+- **Spela vid hovring** - Håll muspekaren över tidsstämplar för att visa uppspelningsknapp för omedelbar uppspelning
 - **Automatisk rullning** - Transkriptet följer uppspelningspositionen automatiskt
 - **Tidsstämplar** - MM:SS-tidsstämplar visas på varje segment
 
@@ -75,11 +81,33 @@
 - **Automatisk slutbehandling** - Fullkvalitetsbearbetning startas automatiskt efter att inspelningen stoppats
 - **Progressiv talarförfining** - Talarnamn förbättras i bakgrunden genom poleringspass
 
+## Sökning
+
+- **Fulltextsökning** - Sök genom alla mötestranskript från startsidan
+- **PostgreSQL GIN-index** - Snabb textsökning med `to_tsvector` och ILIKE-fallback
+- **Resultat grupperade per möte** - Sökresultat organiserade per möte med matchande segment
+- **Klicka för att navigera** - Hoppa direkt till ett matchande segment i valfritt möte
+
+## Selektiv ombearbetning
+
+- **Omdiarisering** - Kör om talarseparering utan att transkribera om (behåller transkript, omtilldelar talare)
+- **Omidentifiering av talare** - Kör om talaridentifiering utan att transkribera eller diarisera om
+- **Full ombearbetning** - Hela pipelinen från början
+- **Bevarande av redigeringar** - Manuellt redigerade segment bevaras vid ombearbetning
+
+## Preferenser
+
+- **Standardvokabulär** - Globala vokabulärtermer som tillämpas på alla nya transkriberingar
+- **Röstprofiler av/på** - Aktivera eller avaktivera röstprofilmatchning per organisation
+- **Hantering av röstprofiler** - Lista och radera sparade röstprofiler med bekräftelse
+
 ## Användargränssnitt
 
 - **Mötesöversikt** - Lista över alla möten med statusmärken, längd och antal talare
+- **Fulltextsökning** - Sök genom alla transkript direkt från startsidan
 - **Tre inmatningslägen** - Flikar för Ladda upp, Spela in och Live i dialogen för ny transkribering
 - **Realtidsförlopp** - Steg-för-steg-förloppsindikator under bearbetning
+- **Ombearbetningsmeny** - Dropdown med omdiarisering, omidentifiering och full ombearbetning
 - **Mörkt tema** - Genomgående mörkt UI i slate/violett
 - **Responsiv layout** - Sidopanel med talare/åtgärder, huvudområde för transkript
 

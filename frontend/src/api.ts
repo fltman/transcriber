@@ -239,3 +239,99 @@ export async function updatePreferences(prefs: Partial<Preferences>): Promise<Pr
 export function getActionResultExportUrl(resultId: string, format: string): string {
   return `/api/actions/results/${resultId}/export?format=${format}`;
 }
+
+// --- Vocabulary Learning ---
+
+export interface VocabularyEntry {
+  id: string;
+  term: string;
+  frequency: number;
+  source_meeting_id: string | null;
+  created_at: string;
+}
+
+export async function listVocabulary(): Promise<VocabularyEntry[]> {
+  const { data } = await api.get("/vocabulary");
+  return data;
+}
+
+export async function deleteVocabularyEntry(id: string): Promise<void> {
+  await api.delete(`/vocabulary/${id}`);
+}
+
+export async function suggestVocabulary(): Promise<{ terms: string[]; text: string }> {
+  const { data } = await api.get("/vocabulary/suggest");
+  return data;
+}
+
+// --- Meeting Insights ---
+
+export interface MeetingInsight {
+  id: string;
+  meeting_id: string;
+  insight_type: "decision" | "action_item" | "open_question";
+  status: "open" | "completed" | "dismissed";
+  content: string;
+  assignee: string | null;
+  source_start_time: number | null;
+  source_end_time: number | null;
+  order: number;
+  created_at: string;
+}
+
+export async function listInsights(meetingId: string): Promise<MeetingInsight[]> {
+  const { data } = await api.get(`/meetings/${meetingId}/insights`);
+  return data;
+}
+
+export async function extractInsights(meetingId: string): Promise<Job> {
+  const { data } = await api.post(`/meetings/${meetingId}/extract-insights`);
+  return data;
+}
+
+export async function updateInsight(
+  id: string,
+  updates: { status?: string; content?: string; assignee?: string }
+): Promise<MeetingInsight> {
+  const { data } = await api.put(`/insights/${id}`, updates);
+  return data;
+}
+
+export async function deleteInsight(id: string): Promise<void> {
+  await api.delete(`/insights/${id}`);
+}
+
+// --- Protocol ---
+
+export async function generateProtocol(meetingId: string): Promise<{ protocol_text: string }> {
+  const { data } = await api.post(`/meetings/${meetingId}/generate-protocol`);
+  return data;
+}
+
+export async function exportProtocolDocx(meetingId: string, protocolText: string): Promise<Blob> {
+  const { data } = await api.post(
+    `/meetings/${meetingId}/export-protocol`,
+    { protocol_text: protocolText },
+    { responseType: "blob" }
+  );
+  return data;
+}
+
+// --- Speaker Analytics ---
+
+export async function getSpeakerAnalytics(meetingId: string): Promise<{
+  speakers: {
+    name: string;
+    color: string;
+    speaking_time: number;
+    segment_count: number;
+    percentage: number;
+    timeline: { start: number; end: number }[];
+  }[];
+  total_duration: number;
+  total_speaking_time: number;
+  silence_percentage: number;
+}> {
+  const { data } = await api.get(`/meetings/${meetingId}/analytics`);
+  return data;
+}

@@ -6,11 +6,14 @@ import type { ProgressUpdate } from "../types";
 import TranscriptView from "../components/TranscriptView";
 import SpeakerPanel from "../components/SpeakerPanel";
 import ActionsPanel from "../components/ActionsPanel";
+import InsightsPanel from "../components/InsightsPanel";
+import AnalyticsPanel from "../components/AnalyticsPanel";
 import AudioPlayer from "../components/AudioPlayer";
 import ProgressTracker from "../components/ProgressTracker";
 import ExportDialog from "../components/ExportDialog";
 import EncryptDialog from "../components/EncryptDialog";
 import DecryptDialog from "../components/DecryptDialog";
+import ProtocolDialog from "../components/ProtocolDialog";
 import LiveRecordingBar from "../components/LiveRecordingBar";
 import { useLiveRecording } from "../hooks/useLiveRecording";
 
@@ -28,7 +31,8 @@ export default function MeetingPage() {
   const [showEncrypt, setShowEncrypt] = useState(false);
   const [showDecrypt, setShowDecrypt] = useState(false);
   const [showReprocess, setShowReprocess] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<"speakers" | "actions">("speakers");
+  const [showProtocol, setShowProtocol] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"speakers" | "actions" | "insights" | "analytics">("speakers");
   const [actionEvent, setActionEvent] = useState<ProgressUpdate | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -321,6 +325,19 @@ export default function MeetingPage() {
                 </div>
               )}
               <button
+                onClick={() => setShowProtocol(true)}
+                disabled={currentMeeting.is_encrypted}
+                className="px-4 py-2.5 bg-slate-800 text-slate-400 border border-slate-700/50 rounded-xl font-medium hover:text-white hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                title="Generera protokoll"
+              >
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Protokoll
+                </span>
+              </button>
+              <button
                 onClick={() => setShowExport(true)}
                 disabled={currentMeeting.is_encrypted}
                 className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-medium hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/25"
@@ -454,26 +471,19 @@ export default function MeetingPage() {
             <div className="w-72 flex-shrink-0">
               {/* Sidebar tab toggle */}
               <div className="flex rounded-lg bg-slate-800/50 p-0.5 mb-3">
-                <button
-                  onClick={() => setSidebarTab("speakers")}
-                  className={`flex-1 text-xs font-medium py-1.5 rounded-md transition ${
-                    sidebarTab === "speakers"
-                      ? "bg-slate-700 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-300"
-                  }`}
-                >
-                  Speakers
-                </button>
-                <button
-                  onClick={() => setSidebarTab("actions")}
-                  className={`flex-1 text-xs font-medium py-1.5 rounded-md transition ${
-                    sidebarTab === "actions"
-                      ? "bg-slate-700 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-300"
-                  }`}
-                >
-                  Actions
-                </button>
+                {(["speakers", "actions", "insights", "analytics"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setSidebarTab(tab)}
+                    className={`flex-1 text-[10px] font-medium py-1.5 rounded-md transition ${
+                      sidebarTab === tab
+                        ? "bg-slate-700 text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-300"
+                    }`}
+                  >
+                    {tab === "speakers" ? "Speakers" : tab === "actions" ? "Actions" : tab === "insights" ? "Insights" : "Stats"}
+                  </button>
+                ))}
               </div>
               {sidebarTab === "speakers" ? (
                 <SpeakerPanel
@@ -482,11 +492,15 @@ export default function MeetingPage() {
                   onUpdate={loadMeeting}
                   meetingId={currentMeeting.id}
                 />
-              ) : (
+              ) : sidebarTab === "actions" ? (
                 <ActionsPanel
                   meetingId={currentMeeting.id}
                   onResultEvent={actionEvent}
                 />
+              ) : sidebarTab === "insights" ? (
+                <InsightsPanel meetingId={currentMeeting.id} />
+              ) : (
+                <AnalyticsPanel meetingId={currentMeeting.id} />
               )}
             </div>
           </div>
@@ -524,6 +538,14 @@ export default function MeetingPage() {
           meetingId={currentMeeting.id}
           onClose={() => setShowDecrypt(false)}
           onDecrypted={loadMeeting}
+        />
+      )}
+
+      {showProtocol && (
+        <ProtocolDialog
+          meetingId={currentMeeting.id}
+          meetingTitle={currentMeeting.title}
+          onClose={() => setShowProtocol(false)}
         />
       )}
     </main>
