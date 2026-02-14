@@ -343,8 +343,10 @@ async def live_websocket(websocket: WebSocket, meeting_id: str):
                         "progress", "error",
                     ):
                         await websocket.send_json(data)
-        except Exception:
+        except asyncio.CancelledError:
             pass
+        except Exception as e:
+            print(f"[Live WS] Redis relay error: {e}")
 
     relay_task = asyncio.create_task(relay_redis())
 
@@ -451,8 +453,15 @@ async def live_websocket(websocket: WebSocket, meeting_id: str):
     finally:
         session.close()
         relay_task.cancel()
-        await pubsub.unsubscribe(f"meeting:{meeting_id}")
-        await r.aclose()
+        try:
+            await pubsub.unsubscribe(f"meeting:{meeting_id}")
+            await pubsub.close()
+        except Exception:
+            pass
+        try:
+            await r.aclose()
+        except Exception:
+            pass
         db.close()
 
 
@@ -461,7 +470,11 @@ def _get_or_create_speaker(db, meeting_id: str, label: str) -> Speaker:
 
     Expires cached objects first so we always see the latest DB state
     (polish passes may have deleted/recreated speakers).
+    Uses try/except to handle race conditions where two chunks try to
+    create the same speaker concurrently.
     """
+    from sqlalchemy.exc import IntegrityError
+
     db.expire_all()
     speaker = (
         db.query(Speaker)
@@ -479,7 +492,17 @@ def _get_or_create_speaker(db, meeting_id: str, label: str) -> Speaker:
         color=SPEAKER_COLORS[idx % len(SPEAKER_COLORS)],
     )
     db.add(speaker)
-    db.flush()
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        speaker = (
+            db.query(Speaker)
+            .filter(Speaker.meeting_id == meeting_id, Speaker.label == label)
+            .first()
+        )
+        if not speaker:
+            raise
     return speaker
 
 

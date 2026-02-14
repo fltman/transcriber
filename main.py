@@ -5,15 +5,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
+from config import settings as _settings
 from database import init_db, seed_default_actions, get_db
 from models import Meeting
 from api import meetings, speakers, segments, export, websocket, live_websocket, actions, model_settings, encryption
 
 app = FastAPI(title="Transcriber")
 
+_default_origins = ["http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5174", "http://127.0.0.1:5175"]
+_cors_origins = _settings.cors_origins.split(",") if _settings.cors_origins else _default_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5174", "http://127.0.0.1:5175"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,6 +38,9 @@ app.include_router(encryption.router)
 def startup():
     init_db()
     seed_default_actions()
+    if not _settings.hf_auth_token or _settings.hf_auth_token == "hf_your_token_here":
+        print("WARNING: HF_AUTH_TOKEN not set — speaker diarization will fail. "
+              "Set it in .env (get one at https://huggingface.co/settings/tokens)")
 
 
 @app.get("/api/meetings/{meeting_id}/audio")
@@ -60,10 +67,9 @@ def health():
 
 @app.get("/api/settings")
 def get_settings():
-    from config import settings
     return {
-        "llm_provider": settings.llm_provider,
-        "openrouter_model": settings.openrouter_model,
-        "ollama_model": settings.ollama_model,
-        "ollama_base_url": settings.ollama_base_url,
+        "llm_provider": _settings.llm_provider,
+        "openrouter_model": _settings.openrouter_model,
+        "ollama_model": _settings.ollama_model,
+        "ollama_base_url": _settings.ollama_base_url,
     }

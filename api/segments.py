@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api", tags=["segments"])
 
 
 class UpdateSegmentTextRequest(BaseModel):
-    text: str
+    text: str = Field(..., min_length=1, max_length=10000)
 
 
 class UpdateSegmentSpeakerRequest(BaseModel):

@@ -10,11 +10,12 @@ class Settings(BaseSettings):
     openrouter_model: str = "anthropic/claude-sonnet-4"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "gemma3:1b"
-    whisper_cli_path: str = "/Users/andersbj/Projekt/whisper.cpp/build/bin/whisper-cli"
-    whisper_model_path: str = "/Users/andersbj/Projekt/whisper-flow/models/kb_whisper_ggml_medium.bin"
-    whisper_small_model_path: str = "/Users/andersbj/Projekt/whisper-flow/models/kb_whisper_ggml_small.bin"
-    storage_path: str = "/Users/andersbj/Projekt/transcriber/storage"
+    whisper_cli_path: str = "../whisper.cpp/build/bin/whisper-cli"
+    whisper_model_path: str = "./models/kb_whisper_ggml_medium.bin"
+    whisper_small_model_path: str = "./models/kb_whisper_ggml_small.bin"
+    storage_path: str = "./storage"
     hf_auth_token: str = ""
+    cors_origins: str = ""  # Comma-separated, e.g. "http://localhost:3000,http://myapp.com"
 
     # Live mode settings
     live_chunk_overlap_seconds: float = 2.5

@@ -43,6 +43,13 @@ async def meeting_websocket(websocket: WebSocket, meeting_id: str):
         pass
     finally:
         relay_task.cancel()
-        await pubsub.unsubscribe(f"meeting:{meeting_id}")
-        await r.aclose()
+        try:
+            await pubsub.unsubscribe(f"meeting:{meeting_id}")
+            await pubsub.close()
+        except Exception:
+            pass
+        try:
+            await r.aclose()
+        except Exception:
+            pass
         manager.disconnect(meeting_id, websocket)

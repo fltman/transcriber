@@ -123,10 +123,10 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
             .order_by(Segment.order)
             .all()
         )
-        edited_segments = {
-            (round(s.start_time, 1), round(s.end_time, 1)): s.text
+        edited_segments = [
+            {"start": s.start_time, "end": s.end_time, "text": s.text}
             for s in existing_segments if s.is_edited
-        }
+        ]
 
         # Delete old segments and speakers
         db.query(Segment).filter(Segment.meeting_id == meeting_id).delete()
@@ -161,16 +161,19 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
             speaker_map["UNKNOWN"] = unk
 
         # Create new segments, preserving edits
+        EDIT_TIME_TOLERANCE = 1.5  # seconds — tolerates Whisper re-timing drift
         for i, seg in enumerate(aligned):
             speaker = speaker_map.get(seg["speaker"])
             text = seg["text"]
             is_edited = False
 
-            # Check if this segment was edited (match by approximate time)
-            key = (round(seg["start"], 1), round(seg["end"], 1))
-            if key in edited_segments:
-                text = edited_segments[key]
-                is_edited = True
+            # Check if this segment was edited (match by time-window tolerance)
+            for edited in edited_segments:
+                if (abs(seg["start"] - edited["start"]) < EDIT_TIME_TOLERANCE
+                        and abs(seg["end"] - edited["end"]) < EDIT_TIME_TOLERANCE):
+                    text = edited["text"]
+                    is_edited = True
+                    break
 
             segment = Segment(
                 meeting_id=meeting_id,
