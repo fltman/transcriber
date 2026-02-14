@@ -1,8 +1,15 @@
 import json
+import logging
+
 import redis
 
 from config import settings
 from models import Job, Meeting
+
+log = logging.getLogger(__name__)
+
+# Module-level Redis connection pool (reused across all publish calls)
+_redis_pool = redis.ConnectionPool.from_url(settings.redis_url)
 
 
 def update_progress(db, job: Job, meeting: Meeting, progress: float, step: str):
@@ -21,7 +28,7 @@ def update_progress(db, job: Job, meeting: Meeting, progress: float, step: str):
 
 def publish_event(meeting_id: str, data: dict):
     """Publish an event to Redis pub/sub for a meeting."""
-    r = redis.Redis.from_url(settings.redis_url)
+    r = redis.Redis(connection_pool=_redis_pool)
     r.publish(f"meeting:{meeting_id}", json.dumps(data))
 
 

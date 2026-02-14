@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -49,10 +50,13 @@ def merge_speakers(req: MergeSpeakersRequest, db: Session = Depends(get_db)):
         {"speaker_id": target.id}, synchronize_session="fetch"
     )
 
-    # Update target stats
-    target.segment_count = db.query(Segment).filter(Segment.speaker_id == target.id).count()
-    segments = db.query(Segment).filter(Segment.speaker_id == target.id).all()
-    target.total_speaking_time = sum(s.end_time - s.start_time for s in segments)
+    # Update target stats with single aggregated query
+    stats = db.query(
+        func.count(Segment.id),
+        func.coalesce(func.sum(Segment.end_time - Segment.start_time), 0),
+    ).filter(Segment.speaker_id == target.id).one()
+    target.segment_count = stats[0]
+    target.total_speaking_time = stats[1]
 
     # Delete source
     db.delete(source)

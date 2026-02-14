@@ -48,6 +48,8 @@ export default function HomePage() {
   const timerRef = useRef<number>(0);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [inputMode, setInputMode] = useState<"file" | "record" | "live">("file");
 
   // Error feedback
@@ -159,17 +161,35 @@ export default function HomePage() {
     }
   }
 
+  // Cleanup AudioContext and stream on unmount
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close();
+        audioCtxRef.current = null;
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      cancelAnimationFrame(animFrameRef.current);
+      clearInterval(timerRef.current);
+    };
+  }, []);
+
   // Audio recording
   const startRecording = useCallback(async () => {
     try {
       const deviceId = useStore.getState().selectedAudioDevice;
       const stream = await getAudioStream(deviceId);
+      streamRef.current = stream;
       const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
       // Audio level meter
       const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
@@ -195,7 +215,9 @@ export default function HomePage() {
         setSelectedFile(file);
         if (!title) setTitle("Recording " + new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
         stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
         audioCtx.close();
+        audioCtxRef.current = null;
         cancelAnimationFrame(animFrameRef.current);
         setAudioLevel(0);
       };

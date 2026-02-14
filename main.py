@@ -22,7 +22,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -42,9 +42,11 @@ def startup():
     init_db()
     seed_default_actions()
     recover_stale_jobs()
+    import logging
+    _log = logging.getLogger(__name__)
     if not _settings.hf_auth_token or _settings.hf_auth_token == "hf_your_token_here":
-        print("WARNING: HF_AUTH_TOKEN not set — speaker diarization will fail. "
-              "Set it in .env (get one at https://huggingface.co/settings/tokens)")
+        _log.warning("HF_AUTH_TOKEN not set — speaker diarization will fail. "
+                     "Set it in .env (get one at https://huggingface.co/settings/tokens)")
 
 
 @app.get("/api/meetings/{meeting_id}/audio")

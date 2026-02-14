@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getMeeting, startProcessing, getJobs } from "../api";
 import { useStore } from "../store";
@@ -52,7 +52,7 @@ export default function MeetingPage() {
       hasAutoStarted.current = true;
       liveRecording.start().catch(console.error);
     }
-  }, [isRecording, isLiveMode]);
+  }, [isRecording, isLiveMode, liveRecording]);
 
   useEffect(() => {
     if (!id) return;
@@ -146,8 +146,9 @@ export default function MeetingPage() {
   const isFailed = currentMeeting.status === "failed";
   const isFinalizing = currentMeeting.status === "finalizing" || liveRecording.isFinalizing;
 
-  // Build speaker list for live mode (from liveSpeakers or derive from segments)
-  const derivedLiveSpeakers = liveSpeakers.length > 0 ? liveSpeakers : (() => {
+  // Build speaker list for live mode (memoized to avoid recalculation on every render)
+  const derivedLiveSpeakers = useMemo(() => {
+    if (liveSpeakers.length > 0) return liveSpeakers;
     const speakerMap = new Map<string, { id: string; label: string; name: string; color: string }>();
     for (const seg of liveSegments) {
       if (seg.speaker_id && !speakerMap.has(seg.speaker_id)) {
@@ -172,7 +173,7 @@ export default function MeetingPage() {
         .reduce((sum, seg) => sum + (seg.end_time - seg.start_time), 0),
       segment_count: liveSegments.filter((seg) => seg.speaker_id === s.id).length,
     }));
-  })();
+  }, [liveSpeakers, liveSegments, id]);
 
   return (
     <main className="max-w-7xl mx-auto px-6 py-6">

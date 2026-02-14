@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import type { Segment, Speaker } from "../types";
 import { updateSegmentText } from "../api";
 import { useStore } from "../store";
@@ -79,8 +79,12 @@ export default function TranscriptView({ segments, speakers, audioRef, onUpdate,
 
   async function saveEdit(segId: string) {
     if (editText.trim()) {
-      await updateSegmentText(segId, editText.trim());
-      onUpdate();
+      try {
+        await updateSegmentText(segId, editText.trim());
+        onUpdate();
+      } catch (err) {
+        console.error("Failed to save segment edit:", err);
+      }
     }
     setEditingId(null);
   }
@@ -91,18 +95,21 @@ export default function TranscriptView({ segments, speakers, audioRef, onUpdate,
     setTimeout(() => editRef.current?.focus(), 50);
   }
 
-  // Group consecutive segments by speaker
-  const grouped: { speaker: Speaker | null; segments: Segment[] }[] = [];
-  let lastSpeakerId: string | null = null;
-  for (const seg of segments) {
-    if (seg.speaker_id !== lastSpeakerId) {
-      const speaker = speakers.find((s) => s.id === seg.speaker_id) || null;
-      grouped.push({ speaker, segments: [seg] });
-      lastSpeakerId = seg.speaker_id;
-    } else {
-      grouped[grouped.length - 1].segments.push(seg);
+  // Group consecutive segments by speaker (memoized to avoid O(n) on every render)
+  const grouped = useMemo(() => {
+    const groups: { speaker: Speaker | null; segments: Segment[] }[] = [];
+    let lastSpeakerId: string | null = null;
+    for (const seg of segments) {
+      if (seg.speaker_id !== lastSpeakerId) {
+        const speaker = speakers.find((s) => s.id === seg.speaker_id) || null;
+        groups.push({ speaker, segments: [seg] });
+        lastSpeakerId = seg.speaker_id;
+      } else {
+        groups[groups.length - 1].segments.push(seg);
+      }
     }
-  }
+    return groups;
+  }, [segments, speakers]);
 
   return (
     <div

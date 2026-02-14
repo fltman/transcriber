@@ -64,16 +64,38 @@ class LLMService:
 
     def _parse_json(self, content: str):
         """Extract JSON from LLM response, handling markdown code blocks and think tags."""
-        # Strip Qwen3-style <think>...</think> blocks
         import re
+        # Strip Qwen3-style <think>...</think> blocks
         content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
 
+        # Try raw parse first
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            pass
+
+        # Extract from markdown code blocks
         if "```" in content:
-            content = content.split("```")[1]
-            if content.startswith("json"):
-                content = content[4:]
-            content = content.strip()
-        return json.loads(content)
+            parts = content.split("```")
+            if len(parts) >= 3:
+                block = parts[1]
+                if block.startswith("json"):
+                    block = block[4:]
+                try:
+                    return json.loads(block.strip())
+                except json.JSONDecodeError:
+                    pass
+
+        # Last resort: find first JSON object or array in the string
+        decoder = json.JSONDecoder()
+        for match in re.finditer(r'[\[{]', content):
+            try:
+                obj, _ = decoder.raw_decode(content, match.start())
+                return obj
+            except json.JSONDecodeError:
+                continue
+
+        raise ValueError(f"No valid JSON found in LLM response: {content[:200]}")
 
     # ------------------------------------------------------------------
     # Iterative intro detection

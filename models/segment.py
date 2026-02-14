@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import String, Float, Integer, Boolean, Text, ForeignKey
+from sqlalchemy import String, Float, Integer, Boolean, Text, ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -8,6 +8,9 @@ from database import Base
 
 class Segment(Base):
     __tablename__ = "segments"
+    __table_args__ = (
+        Index("ix_segments_meeting_order", "meeting_id", "order"),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     meeting_id: Mapped[str] = mapped_column(String, ForeignKey("meetings.id", ondelete="CASCADE"))

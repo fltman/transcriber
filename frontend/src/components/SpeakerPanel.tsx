@@ -22,23 +22,35 @@ export default function SpeakerPanel({ speakers, segments, onUpdate }: Props) {
 
   async function saveName(id: string) {
     if (editName.trim()) {
-      await updateSpeaker(id, { display_name: editName.trim() });
-      onUpdate();
+      try {
+        await updateSpeaker(id, { display_name: editName.trim() });
+        onUpdate();
+      } catch (err) {
+        console.error("Failed to save speaker name:", err);
+      }
     }
     setEditingId(null);
   }
 
   async function handleColorChange(id: string, color: string) {
-    await updateSpeaker(id, { color });
-    onUpdate();
+    try {
+      await updateSpeaker(id, { color });
+      onUpdate();
+    } catch (err) {
+      console.error("Failed to update speaker color:", err);
+    }
   }
 
   async function handleMerge(targetId: string) {
     if (!mergeSource || mergeSource === targetId) return;
-    await mergeSpeakers(mergeSource, targetId);
-    setMergeMode(false);
-    setMergeSource(null);
-    onUpdate();
+    try {
+      await mergeSpeakers(mergeSource, targetId);
+      setMergeMode(false);
+      setMergeSource(null);
+      onUpdate();
+    } catch (err) {
+      console.error("Failed to merge speakers:", err);
+    }
   }
 
   // Calculate speaking time percentage for bars

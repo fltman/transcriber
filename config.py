@@ -28,6 +28,14 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+# Warn about missing critical config at import time
+import logging as _logging
+_config_log = _logging.getLogger(__name__)
+if not settings.hf_auth_token:
+    _config_log.warning("HF_AUTH_TOKEN is not set — speaker diarization will not work")
+if settings.llm_provider == "openrouter" and not settings.openrouter_api_key:
+    _config_log.warning("OPENROUTER_API_KEY is not set — LLM features will fail")
+
 
 def get_storage_path() -> Path:
     p = Path(settings.storage_path)
