@@ -10,6 +10,8 @@ from database import Base
 
 class JobType(str, enum.Enum):
     PROCESS_MEETING = "process_meeting"
+    POLISH_PASS = "polish_pass"
+    FINALIZE_LIVE = "finalize_live"
 
 
 class JobStatus(str, enum.Enum):

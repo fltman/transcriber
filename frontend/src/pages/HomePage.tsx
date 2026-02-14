@@ -1,11 +1,16 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { listMeetings, createMeeting, deleteMeeting } from "../api";
+import ReactMarkdown from "react-markdown";
+import { listMeetings, createMeeting, createLiveMeeting, deleteMeeting, listActionResults, getActionResultExportUrl } from "../api";
+import type { ActionResult } from "../types";
 import { useStore } from "../store";
+import AudioSourceSelect, { getAudioStream } from "../components/AudioSourceSelect";
 
 const STATUS_LABELS: Record<string, { text: string; color: string; dot: string }> = {
   uploaded: { text: "Ready", color: "bg-sky-500/10 text-sky-400 ring-1 ring-sky-500/20", dot: "bg-sky-400" },
   processing: { text: "Processing...", color: "bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20", dot: "bg-amber-400 animate-pulse" },
+  recording: { text: "Recording", color: "bg-red-500/10 text-red-400 ring-1 ring-red-500/20", dot: "bg-red-400 animate-pulse" },
+  finalizing: { text: "Finalizing...", color: "bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20", dot: "bg-amber-400 animate-pulse" },
   completed: { text: "Done", color: "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20", dot: "bg-emerald-400" },
   failed: { text: "Failed", color: "bg-red-500/10 text-red-400 ring-1 ring-red-500/20", dot: "bg-red-400" },
 };
@@ -43,7 +48,30 @@ export default function HomePage() {
   const timerRef = useRef<number>(0);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
-  const [inputMode, setInputMode] = useState<"file" | "record">("file");
+  const [inputMode, setInputMode] = useState<"file" | "record" | "live">("file");
+
+  // Action results expansion
+  const [expandedMeetingId, setExpandedMeetingId] = useState<string | null>(null);
+  const [meetingResults, setMeetingResults] = useState<Record<string, ActionResult[]>>({});
+  const [loadingResults, setLoadingResults] = useState<string | null>(null);
+  const [expandedResultId, setExpandedResultId] = useState<string | null>(null);
+
+  async function toggleResults(e: React.MouseEvent, meetingId: string) {
+    e.stopPropagation();
+    if (expandedMeetingId === meetingId) {
+      setExpandedMeetingId(null);
+      setExpandedResultId(null);
+      return;
+    }
+    setExpandedMeetingId(meetingId);
+    setExpandedResultId(null);
+    if (!meetingResults[meetingId]) {
+      setLoadingResults(meetingId);
+      const results = await listActionResults(meetingId);
+      setMeetingResults((prev) => ({ ...prev, [meetingId]: results }));
+      setLoadingResults(null);
+    }
+  }
 
   useEffect(() => {
     loadMeetings();
@@ -77,6 +105,21 @@ export default function HomePage() {
     }
   }
 
+  async function handleStartLive() {
+    if (!title.trim()) return;
+    setUploading(true);
+    try {
+      const meeting = await createLiveMeeting(title.trim());
+      setShowUpload(false);
+      resetDialog();
+      navigate(`/meetings/${meeting.id}`);
+    } catch {
+      // error
+    } finally {
+      setUploading(false);
+    }
+  }
+
   function resetDialog() {
     setTitle("");
     setSelectedFile(null);
@@ -89,6 +132,7 @@ export default function HomePage() {
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
+    if (!window.confirm("Delete this recording? This cannot be undone.")) return;
     await deleteMeeting(id);
     loadMeetings();
   }
@@ -106,7 +150,8 @@ export default function HomePage() {
   // Audio recording
   const startRecording = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const deviceId = useStore.getState().selectedAudioDevice;
+      const stream = await getAudioStream(deviceId);
       const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -192,13 +237,13 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Upload / Record dialog */}
+      {/* Upload / Record / Live dialog */}
       {showUpload && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => { setShowUpload(false); resetDialog(); }}>
           <div className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-xl font-bold text-white mb-5">New transcription</h2>
 
-            {/* Toggle file / record */}
+            {/* Toggle file / record / live */}
             <div className="flex bg-slate-800 rounded-xl p-1 mb-5">
               <button
                 onClick={() => setInputMode("file")}
@@ -212,7 +257,7 @@ export default function HomePage() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  Upload file
+                  Upload
                 </span>
               </button>
               <button
@@ -228,6 +273,19 @@ export default function HomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                   Record
+                </span>
+              </button>
+              <button
+                onClick={() => setInputMode("live")}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  inputMode === "live"
+                    ? "bg-slate-700 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full" />
+                  Live
                 </span>
               </button>
             </div>
@@ -288,6 +346,7 @@ export default function HomePage() {
             {/* Recording area */}
             {inputMode === "record" && (
               <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-8 text-center mb-5">
+                {!recording && <AudioSourceSelect />}
                 {!recording && !selectedFile && (
                   <div>
                     <button
@@ -357,6 +416,23 @@ export default function HomePage() {
               </div>
             )}
 
+            {/* Live mode info */}
+            {inputMode === "live" && (
+              <div className="rounded-xl bg-slate-800/50 border border-red-500/20 p-8 text-center mb-5">
+                <AudioSourceSelect />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+                  <div className="relative">
+                    <span className="w-4 h-4 bg-red-500 rounded-full block" />
+                    <span className="absolute inset-0 w-4 h-4 bg-red-500 rounded-full animate-ping opacity-50" />
+                  </div>
+                </div>
+                <h3 className="text-white font-semibold mb-2">Live Transcription</h3>
+                <p className="text-slate-400 text-sm max-w-xs mx-auto">
+                  Transcription happens in real-time as you speak. Speaker names are progressively refined in the background.
+                </p>
+              </div>
+            )}
+
             {/* Title */}
             <input
               type="text"
@@ -366,30 +442,32 @@ export default function HomePage() {
               className="w-full bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 mb-4"
             />
 
-            {/* Optional: speaker count */}
-            <details className="mb-5 group">
-              <summary className="text-sm text-slate-500 cursor-pointer hover:text-slate-300 transition">
-                Advanced settings
-              </summary>
-              <div className="flex gap-3 mt-3">
-                <input
-                  type="number"
-                  placeholder="Min speakers"
-                  value={minSpeakers}
-                  onChange={(e) => setMinSpeakers(e.target.value)}
-                  className="flex-1 bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                  min="1"
-                />
-                <input
-                  type="number"
-                  placeholder="Max speakers"
-                  value={maxSpeakers}
-                  onChange={(e) => setMaxSpeakers(e.target.value)}
-                  className="flex-1 bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                  min="1"
-                />
-              </div>
-            </details>
+            {/* Optional: speaker count (not for live) */}
+            {inputMode !== "live" && (
+              <details className="mb-5 group">
+                <summary className="text-sm text-slate-500 cursor-pointer hover:text-slate-300 transition">
+                  Advanced settings
+                </summary>
+                <div className="flex gap-3 mt-3">
+                  <input
+                    type="number"
+                    placeholder="Min speakers"
+                    value={minSpeakers}
+                    onChange={(e) => setMinSpeakers(e.target.value)}
+                    className="flex-1 bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                    min="1"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max speakers"
+                    value={maxSpeakers}
+                    onChange={(e) => setMaxSpeakers(e.target.value)}
+                    className="flex-1 bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                    min="1"
+                  />
+                </div>
+              </details>
+            )}
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
@@ -399,23 +477,46 @@ export default function HomePage() {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleUpload}
-                disabled={uploading || !selectedFile || !title.trim()}
-                className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/25"
-              >
-                {uploading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Uploading...
-                  </span>
-                ) : (
-                  "Start transcription"
-                )}
-              </button>
+              {inputMode === "live" ? (
+                <button
+                  onClick={handleStartLive}
+                  disabled={uploading || !title.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-500 hover:to-rose-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-red-500/25"
+                >
+                  {uploading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Starting...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-white rounded-full" />
+                      Start live session
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleUpload}
+                  disabled={uploading || !selectedFile || !title.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/25"
+                >
+                  {uploading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Uploading...
+                    </span>
+                  ) : (
+                    "Start transcription"
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -438,51 +539,224 @@ export default function HomePage() {
         <div className="space-y-3">
           {meetings.map((m) => {
             const badge = STATUS_LABELS[m.status] || { text: m.status, color: "bg-slate-800 text-slate-400", dot: "bg-slate-500" };
+            const isExpanded = expandedMeetingId === m.id;
+            const results = meetingResults[m.id] || [];
+            const completedResults = results.filter((r) => r.status === "completed");
             return (
               <div
                 key={m.id}
-                onClick={() => navigate(`/meetings/${m.id}`)}
-                className="group bg-slate-900/50 border border-slate-800/50 rounded-xl p-5 hover:bg-slate-800/50 hover:border-slate-700/50 transition-all cursor-pointer"
+                className="group bg-slate-900/50 border border-slate-800/50 rounded-xl hover:border-slate-700/50 transition-all"
               >
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-white group-hover:text-violet-300 transition truncate">
-                      {m.title}
-                    </h3>
-                    <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500">
-                      <span>{formatDate(m.created_at)}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-700" />
-                      <span>{formatDuration(m.duration)}</span>
-                      {m.speaker_count > 0 && (
-                        <>
-                          <span className="w-1 h-1 rounded-full bg-slate-700" />
-                          <span>{m.speaker_count} speakers</span>
-                        </>
+                <div
+                  onClick={() => navigate(`/meetings/${m.id}`)}
+                  className="p-5 cursor-pointer hover:bg-slate-800/50 rounded-xl transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-white group-hover:text-violet-300 transition truncate flex items-center gap-2">
+                        {m.is_encrypted && (
+                          <svg className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        )}
+                        {m.title}
+                      </h3>
+                      <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500">
+                        <span>{formatDate(m.created_at)}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-700" />
+                        <span>{formatDuration(m.duration)}</span>
+                        {m.mode === "live" && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-slate-700" />
+                            <span className="text-red-400 text-xs font-medium">LIVE</span>
+                          </>
+                        )}
+                        {m.speaker_count > 0 && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-slate-700" />
+                            <span>{m.speaker_count} speakers</span>
+                          </>
+                        )}
+                        {m.segment_count > 0 && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-slate-700" />
+                            <span>{m.segment_count} segments</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 ml-4">
+                      {m.status === "completed" && (
+                        <button
+                          onClick={(e) => toggleResults(e, m.id)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                            isExpanded
+                              ? "bg-violet-500/20 text-violet-400 ring-1 ring-violet-500/30"
+                              : "text-slate-500 hover:text-violet-400 hover:bg-slate-800"
+                          }`}
+                          title="Show action results"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Versions
+                          <svg
+                            className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
                       )}
-                      {m.segment_count > 0 && (
-                        <>
-                          <span className="w-1 h-1 rounded-full bg-slate-700" />
-                          <span>{m.segment_count} segments</span>
-                        </>
-                      )}
+                      <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                        {badge.text}
+                      </span>
+                      <button
+                        onClick={(e) => handleDelete(e, m.id)}
+                        className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all p-1"
+                        title="Delete"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 ml-4">
-                    <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
-                      {badge.text}
-                    </span>
-                    <button
-                      onClick={(e) => handleDelete(e, m.id)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all p-1"
-                      title="Delete"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
+
+                {/* Expanded action results */}
+                {isExpanded && (
+                  <div className="border-t border-slate-800/50 px-5 pb-4 pt-3" onClick={(e) => e.stopPropagation()}>
+                    {loadingResults === m.id ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+                        <div className="w-3.5 h-3.5 border border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+                        Loading...
+                      </div>
+                    ) : completedResults.length === 0 ? (
+                      <p className="text-sm text-slate-600 py-2">No action results yet. Open the meeting and run an action.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {completedResults.map((r) => {
+                          const isResultExpanded = expandedResultId === r.id;
+                          return (
+                            <div key={r.id} className="rounded-lg bg-slate-800/40 border border-slate-700/30 overflow-hidden">
+                              <button
+                                onClick={() => setExpandedResultId(isResultExpanded ? null : r.id)}
+                                className="w-full flex items-center justify-between px-3.5 py-2.5 text-left hover:bg-slate-800/60 transition"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <svg
+                                    className={`w-3.5 h-3.5 text-slate-500 transition-transform flex-shrink-0 ${isResultExpanded ? "rotate-90" : ""}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                  <span className="text-sm text-slate-300 font-medium truncate">{r.action_name}</span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                  <span className="text-[10px] text-slate-600">
+                                    {new Date(r.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                  <div className="relative group/dl" onClick={(ev) => ev.stopPropagation()}>
+                                    <button className="p-1 pb-2 text-slate-600 hover:text-violet-400 transition">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                                      </svg>
+                                    </button>
+                                    <div className="absolute right-0 top-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 hidden group-hover/dl:block z-10 min-w-[80px]">
+                                      {["md", "docx", "pdf", "txt"].map((fmt) => (
+                                        <a
+                                          key={fmt}
+                                          href={getActionResultExportUrl(r.id, fmt)}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="block px-3 py-1.5 text-[11px] text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                                        >
+                                          {fmt.toUpperCase()}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                              {isResultExpanded && r.is_encrypted && (
+                                <div className="px-3.5 pb-3.5 border-t border-slate-700/30">
+                                  <div className="flex items-center gap-2.5 py-4 text-amber-400/80">
+                                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                    <span className="text-sm">This version is encrypted. Unlock the meeting to view.</span>
+                                  </div>
+                                </div>
+                              )}
+                              {isResultExpanded && r.result_text && !r.is_encrypted && (
+                                <div className="px-3.5 pb-3.5 border-t border-slate-700/30">
+                                  <div className="flex justify-end gap-3 mt-2 mb-1">
+                                    <div className="relative group/dl2" onClick={(ev) => ev.stopPropagation()}>
+                                      <button className="text-[10px] text-slate-500 hover:text-violet-400 transition flex items-center gap-1 pb-1">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                                        </svg>
+                                        Download
+                                      </button>
+                                      <div className="absolute right-0 top-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 hidden group-hover/dl2:block z-10 min-w-[80px]">
+                                        {["md", "docx", "pdf", "txt"].map((fmt) => (
+                                          <a
+                                            key={fmt}
+                                            href={getActionResultExportUrl(r.id, fmt)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="block px-3 py-1.5 text-[11px] text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                                          >
+                                            {fmt.toUpperCase()}
+                                          </a>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => navigator.clipboard.writeText(r.result_text!)}
+                                      className="text-[10px] text-slate-500 hover:text-violet-400 transition flex items-center gap-1"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                      </svg>
+                                      Copy
+                                    </button>
+                                  </div>
+                                  <div className="max-h-96 overflow-y-auto text-sm leading-relaxed">
+                                    <ReactMarkdown
+                                      components={{
+                                        h1: ({ children }) => <h1 className="text-base font-bold text-slate-200 mt-3 mb-1.5">{children}</h1>,
+                                        h2: ({ children }) => <h2 className="text-sm font-bold text-slate-200 mt-3 mb-1.5">{children}</h2>,
+                                        h3: ({ children }) => <h3 className="text-sm font-semibold text-slate-300 mt-2 mb-1">{children}</h3>,
+                                        p: ({ children }) => <p className="text-slate-400 mb-2">{children}</p>,
+                                        strong: ({ children }) => <strong className="text-slate-200 font-semibold">{children}</strong>,
+                                        em: ({ children }) => <em className="text-slate-300 italic">{children}</em>,
+                                        ul: ({ children }) => <ul className="list-disc list-inside text-slate-400 mb-2 space-y-0.5">{children}</ul>,
+                                        ol: ({ children }) => <ol className="list-decimal list-inside text-slate-400 mb-2 space-y-0.5">{children}</ol>,
+                                        li: ({ children }) => <li className="text-slate-400">{children}</li>,
+                                        hr: () => <hr className="border-slate-700/50 my-2" />,
+                                        blockquote: ({ children }) => <blockquote className="border-l-2 border-violet-500/30 pl-3 my-2 text-slate-500 italic">{children}</blockquote>,
+                                        code: ({ children }) => <code className="bg-slate-800 text-violet-300 px-1 py-0.5 rounded text-xs">{children}</code>,
+                                      }}
+                                    >
+                                      {r.result_text}
+                                    </ReactMarkdown>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

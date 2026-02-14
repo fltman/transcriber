@@ -55,6 +55,56 @@ class WhisperService:
 
         return segments
 
+    def transcribe_chunk(self, audio_path: str, model_path: str | None = None, prompt: str | None = None) -> list[dict]:
+        """
+        Transcribe a short audio chunk using whisper-cli.
+        Uses the small model by default for speed. Same output format as transcribe().
+        prompt: previous transcription text for context continuity.
+        """
+        model = model_path or settings.whisper_small_model_path
+        output_json = audio_path + ".json"
+
+        cmd = [
+            self.cli_path,
+            "-m", model,
+            "-f", audio_path,
+            "-l", "sv",
+            "-oj",
+            "-of", audio_path,
+            "--no-speech-thold", "0.5",  # Skip segments with high no-speech probability
+        ]
+        if prompt:
+            # Pass last transcription as initial prompt for continuity
+            cmd.extend(["--prompt", prompt[-200:]])
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=120,  # 2 min max for chunks
+        )
+
+        if result.returncode != 0:
+            raise RuntimeError(f"whisper-cli chunk failed: {result.stderr}")
+
+        with open(output_json, "r") as f:
+            data = json.load(f)
+
+        segments = []
+        for item in data.get("transcription", []):
+            text = item.get("text", "").strip()
+            if not text:
+                continue
+            start = self._parse_timestamp(item["timestamps"]["from"])
+            end = self._parse_timestamp(item["timestamps"]["to"])
+            segments.append({
+                "start": start,
+                "end": end,
+                "text": text,
+            })
+
+        return segments
+
     def _parse_timestamp(self, ts: str) -> float:
         """Parse 'HH:MM:SS.mmm' or 'HH:MM:SS,mmm' to seconds."""
         ts = ts.replace(",", ".")

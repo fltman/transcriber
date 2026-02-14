@@ -12,8 +12,14 @@ class Settings(BaseSettings):
     ollama_model: str = "gemma3:1b"
     whisper_cli_path: str = "/Users/andersbj/Projekt/whisper.cpp/build/bin/whisper-cli"
     whisper_model_path: str = "/Users/andersbj/Projekt/whisper-flow/models/kb_whisper_ggml_medium.bin"
+    whisper_small_model_path: str = "/Users/andersbj/Projekt/whisper-flow/models/kb_whisper_ggml_small.bin"
     storage_path: str = "/Users/andersbj/Projekt/transcriber/storage"
     hf_auth_token: str = ""
+
+    # Live mode settings
+    live_chunk_overlap_seconds: float = 2.5
+    live_speaker_threshold: float = 0.45
+    live_min_segment_duration: float = 2.0
 
     class Config:
         env_file = ".env"

@@ -4,8 +4,11 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
+from pydantic import BaseModel
+
 from database import get_db
 from models import Meeting, Job, MeetingStatus
+from models.meeting import MeetingMode, RecordingStatus
 from models.job import JobType, JobStatus
 from config import get_meeting_path
 from tasks.process_meeting import process_meeting_task
@@ -99,6 +102,27 @@ def start_processing(meeting_id: str, db: Session = Depends(get_db)):
     db.commit()
 
     return job.to_dict()
+
+
+class LiveMeetingRequest(BaseModel):
+    title: str
+
+
+@router.post("/live")
+def create_live_meeting(req: LiveMeetingRequest, db: Session = Depends(get_db)):
+    meeting = Meeting(
+        title=req.title,
+        status=MeetingStatus.RECORDING,
+        mode=MeetingMode.LIVE.value,
+        recording_status=RecordingStatus.RECORDING.value,
+    )
+    db.add(meeting)
+    db.commit()
+
+    # Create meeting storage directory
+    get_meeting_path(meeting.id)
+
+    return meeting.to_dict()
 
 
 @router.get("/{meeting_id}/jobs")

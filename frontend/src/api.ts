@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Meeting, Segment, Speaker, Job } from "./types";
+import type { Meeting, Segment, Speaker, Job, Action, ActionResult, ModelSettings } from "./types";
 
 const api = axios.create({ baseURL: "/api" });
 
@@ -10,6 +10,11 @@ export async function listMeetings(): Promise<Meeting[]> {
 
 export async function createMeeting(form: FormData): Promise<Meeting> {
   const { data } = await api.post("/meetings", form);
+  return data;
+}
+
+export async function createLiveMeeting(title: string): Promise<Meeting> {
+  const { data } = await api.post("/meetings/live", { title });
   return data;
 }
 
@@ -75,4 +80,81 @@ export function getAudioUrl(meetingId: string): string {
 
 export function getExportUrl(meetingId: string, format: string): string {
   return `/api/meetings/${meetingId}/export?format=${format}`;
+}
+
+// --- Actions ---
+
+export async function listActions(): Promise<Action[]> {
+  const { data } = await api.get("/actions");
+  return data;
+}
+
+export async function createAction(name: string, prompt: string): Promise<Action> {
+  const { data } = await api.post("/actions", { name, prompt });
+  return data;
+}
+
+export async function updateAction(id: string, updates: { name?: string; prompt?: string }): Promise<Action> {
+  const { data } = await api.put(`/actions/${id}`, updates);
+  return data;
+}
+
+export async function deleteAction(id: string): Promise<void> {
+  await api.delete(`/actions/${id}`);
+}
+
+export async function runAction(actionId: string, meetingId: string): Promise<ActionResult> {
+  const { data } = await api.post(`/actions/${actionId}/run/${meetingId}`);
+  return data;
+}
+
+export async function listActionResults(meetingId: string): Promise<ActionResult[]> {
+  const { data } = await api.get(`/actions/results/${meetingId}`);
+  return data;
+}
+
+export async function deleteActionResult(id: string): Promise<void> {
+  await api.delete(`/actions/results/${id}`);
+}
+
+// --- Model Settings ---
+
+export async function getModelSettings(): Promise<ModelSettings> {
+  const { data } = await api.get("/model-settings");
+  return data;
+}
+
+export async function updateModelSettings(assignments: Record<string, string>): Promise<ModelSettings> {
+  const { data } = await api.put("/model-settings", { assignments });
+  return data;
+}
+
+// --- Encryption ---
+
+export async function encryptMeeting(
+  meetingId: string,
+  password: string,
+  includeVersions: boolean
+): Promise<Meeting> {
+  const { data } = await api.post(`/meetings/${meetingId}/encrypt`, {
+    password,
+    include_versions: includeVersions,
+  });
+  return data;
+}
+
+export async function decryptMeeting(
+  meetingId: string,
+  password: string
+): Promise<Meeting> {
+  const { data } = await api.post(`/meetings/${meetingId}/decrypt`, {
+    password,
+  });
+  return data;
+}
+
+// --- Action Result Export ---
+
+export function getActionResultExportUrl(resultId: string, format: string): string {
+  return `/api/actions/results/${resultId}/export?format=${format}`;
 }

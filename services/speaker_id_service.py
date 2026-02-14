@@ -32,10 +32,10 @@ INTRO_DURATION = 120.0  # First 2 minutes
 
 
 class SpeakerIdService:
-    def __init__(self):
+    def __init__(self, llm_preset: dict | None = None):
         self.audio_service = AudioService()
         self.embedding_service = EmbeddingService()
-        self.llm_service = LLMService()
+        self.llm_service = LLMService(preset=llm_preset)
 
     def has_intro(self, segments: list[dict]) -> bool:
         """Check if the transcript contains speaker introductions in the first 120s."""

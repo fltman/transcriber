@@ -1,0 +1,7 @@
+{
+  "id": "ollama-qwen3-8b",
+  "name": "Qwen 3 8B (Ollama)",
+  "type": "llm",
+  "provider": "ollama",
+  "model": "qwen3:8b"
+}

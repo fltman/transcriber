@@ -1,0 +1,7 @@
+{
+  "id": "claude-sonnet-4",
+  "name": "Claude Sonnet 4",
+  "type": "llm",
+  "provider": "openrouter",
+  "model": "anthropic/claude-sonnet-4"
+}

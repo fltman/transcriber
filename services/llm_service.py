@@ -11,8 +11,13 @@ MAX_CHUNKS = 20  # Safety limit: 10 minutes max
 
 
 class LLMService:
-    def __init__(self):
-        self.provider = settings.llm_provider  # "openrouter" or "ollama"
+    def __init__(self, preset: dict | None = None):
+        if preset and preset.get("provider"):
+            self.provider = preset["provider"]
+            self.model = preset.get("model")
+        else:
+            self.provider = settings.llm_provider  # "openrouter" or "ollama"
+            self.model = None  # use defaults from config
 
     def _call(self, messages: list[dict], max_tokens: int = 1000) -> str:
         """Route to the configured LLM provider."""
@@ -26,7 +31,7 @@ class LLMService:
             "Content-Type": "application/json",
         }
         payload = {
-            "model": settings.openrouter_model,
+            "model": self.model or settings.openrouter_model,
             "messages": messages,
             "temperature": 0.1,
             "max_tokens": max_tokens,
@@ -40,9 +45,11 @@ class LLMService:
 
     def _call_ollama(self, messages: list[dict], max_tokens: int) -> str:
         payload = {
-            "model": settings.ollama_model,
+            "model": self.model or settings.ollama_model,
             "messages": messages,
             "stream": False,
+            "think": False,  # Disable qwen3 thinking mode for speed
+            "keep_alive": "30m",  # Keep model loaded during recording sessions
             "options": {
                 "temperature": 0.1,
                 "num_predict": max_tokens,
@@ -50,7 +57,7 @@ class LLMService:
         }
         response = requests.post(
             f"{settings.ollama_base_url}/api/chat",
-            json=payload, timeout=120,  # local models can be slower
+            json=payload, timeout=120,
         )
         response.raise_for_status()
         return response.json()["message"]["content"].strip()
