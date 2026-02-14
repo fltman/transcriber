@@ -8,6 +8,7 @@ storage/
 .DS_Store
 node_modules/
 frontend/dist/
+*.tsbuildinfo
 *.wav
 *.mp3
 *.mp4
