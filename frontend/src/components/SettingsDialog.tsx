@@ -66,6 +66,8 @@ export default function SettingsDialog({ onClose }: Props) {
   }
 
   async function handleDeleteProfile(id: string) {
+    const profile = profiles.find((p) => p.id === id);
+    if (!confirm(`Delete voice profile "${profile?.name}"? This cannot be undone.`)) return;
     await deleteSpeakerProfile(id);
     setProfiles(profiles.filter((p) => p.id !== id));
   }
@@ -182,10 +184,10 @@ export default function SettingsDialog({ onClose }: Props) {
                 </button>
               </div>
 
-              {/* Saved profiles list */}
-              {profilesEnabled && profiles.length > 0 && (
+              {/* Saved profiles list — always visible so profiles can be deleted even when disabled */}
+              {profiles.length > 0 && (
                 <div className="mt-3 space-y-1.5">
-                  <p className="text-xs text-slate-500">{profiles.length} saved profile(s)</p>
+                  <p className="text-xs text-slate-500">{profiles.length} saved voice profile(s)</p>
                   {profiles.map((p) => (
                     <div key={p.id} className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2">
                       <div>
