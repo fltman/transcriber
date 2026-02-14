@@ -1,5 +1,16 @@
 # Installation - Windows
 
+## Quick install
+
+```powershell
+git clone https://github.com/fltman/transcriber.git
+cd transcriber
+powershell -ExecutionPolicy Bypass -File install.ps1   # Automated installer
+powershell -ExecutionPolicy Bypass -File start.ps1     # Start all services
+```
+
+The script handles everything below automatically. Read on if you prefer manual setup or need to troubleshoot.
+
 ## Prerequisites
 
 - **Windows 10/11** (64-bit)

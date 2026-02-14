@@ -1,5 +1,16 @@
 # Installation - Linux
 
+## Quick install
+
+```bash
+git clone https://github.com/fltman/transcriber.git
+cd transcriber
+bash install.sh   # Automated installer
+bash start.sh     # Start all services
+```
+
+The script handles everything below automatically. Read on if you prefer manual setup or need to troubleshoot.
+
 ## Prerequisites
 
 - **Ubuntu 22.04+**, Debian 12+, or similar (other distros work with adjusted package commands)

@@ -52,7 +52,20 @@ The instructions below are for **macOS with Apple Silicon**. For other platforms
 - **Ollama** with a model like `qwen3:8b` (recommended), or an OpenRouter API key
 - **Hugging Face token** with access to `pyannote/speaker-diarization-3.1`
 
-## Installation
+## Quick install
+
+```bash
+git clone https://github.com/fltman/transcriber.git
+cd transcriber
+bash install.sh   # macOS/Linux automated installer
+bash start.sh     # Start all services
+```
+
+On Windows, use `install.ps1` and `start.ps1` instead (see [Windows guide](INSTALL_WINDOWS.md)).
+
+The installer checks prerequisites, builds whisper.cpp, downloads models, sets up Python/Node dependencies, starts Docker, and creates the `.env` file. You only need to add your Hugging Face token afterwards.
+
+## Manual installation
 
 ### 1. Clone the repo
 
