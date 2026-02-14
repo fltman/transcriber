@@ -87,7 +87,7 @@ def run_action(action_id: str, meeting_id: str, db: Session = Depends(get_db)):
         db.commit()
     except Exception as e:
         result.status = ActionResultStatus.FAILED
-        result.output = f"Failed to queue task: {e}"
+        result.error = f"Failed to queue task: {e}"
         db.commit()
         raise HTTPException(503, f"Task queue unavailable: {e}")
 

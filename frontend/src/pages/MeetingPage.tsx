@@ -132,21 +132,7 @@ export default function MeetingPage() {
     loadMeeting();
   }
 
-  if (!currentMeeting) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  const isProcessing = currentMeeting.status === "processing";
-  const isCompleted = currentMeeting.status === "completed";
-  const isUploaded = currentMeeting.status === "uploaded";
-  const isFailed = currentMeeting.status === "failed";
-  const isFinalizing = currentMeeting.status === "finalizing" || liveRecording.isFinalizing;
-
-  // Build speaker list for live mode (memoized to avoid recalculation on every render)
+  // Build speaker list for live mode (memoized, must be before early return)
   const derivedLiveSpeakers = useMemo(() => {
     if (liveSpeakers.length > 0) return liveSpeakers;
     const speakerMap = new Map<string, { id: string; label: string; name: string; color: string }>();
@@ -174,6 +160,20 @@ export default function MeetingPage() {
       segment_count: liveSegments.filter((seg) => seg.speaker_id === s.id).length,
     }));
   }, [liveSpeakers, liveSegments, id]);
+
+  if (!currentMeeting) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-10 h-10 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const isProcessing = currentMeeting.status === "processing";
+  const isCompleted = currentMeeting.status === "completed";
+  const isUploaded = currentMeeting.status === "uploaded";
+  const isFailed = currentMeeting.status === "failed";
+  const isFinalizing = currentMeeting.status === "finalizing" || liveRecording.isFinalizing;
 
   return (
     <main className="max-w-7xl mx-auto px-6 py-6">

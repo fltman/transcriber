@@ -122,8 +122,8 @@ export function useLiveRecording({ meetingId, deviceId, onFinalizeComplete }: Us
             console.error("Live WS error:", data.error);
             break;
         }
-      } catch {
-        // ignore parse errors
+      } catch (e) {
+        console.debug("Live WS parse error:", e);
       }
     };
 

@@ -16,7 +16,7 @@ from api import meetings, speakers, segments, export, websocket, live_websocket,
 app = FastAPI(title="Transcriber")
 
 _default_origins = ["http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5174", "http://127.0.0.1:5175"]
-_cors_origins = _settings.cors_origins.split(",") if _settings.cors_origins else _default_origins
+_cors_origins = [x.strip() for x in _settings.cors_origins.split(",") if x.strip()] if _settings.cors_origins else _default_origins
 
 app.add_middleware(
     CORSMiddleware,

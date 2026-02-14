@@ -20,7 +20,8 @@ export default function DecryptDialog({ meetingId, onClose, onDecrypted }: Props
       await decryptMeeting(meetingId, password);
       onDecrypted();
       onClose();
-    } catch (e: any) {
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string }; status?: number } };
       const detail = e.response?.data?.detail;
       if (e.response?.status === 403) {
         setError("Wrong password");

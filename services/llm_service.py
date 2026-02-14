@@ -1,5 +1,7 @@
 import json
 import logging
+import re
+
 import requests
 
 from config import settings
@@ -64,7 +66,6 @@ class LLMService:
 
     def _parse_json(self, content: str):
         """Extract JSON from LLM response, handling markdown code blocks and think tags."""
-        import re
         # Strip Qwen3-style <think>...</think> blocks
         content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
 

@@ -48,7 +48,7 @@ class EncryptionService:
             f = Fernet(key)
             result = f.decrypt(verify_token.encode()).decode()
             return result == VERIFY_PLAINTEXT
-        except (InvalidToken, Exception):
+        except InvalidToken:
             return False
 
     @staticmethod

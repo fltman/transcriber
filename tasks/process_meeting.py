@@ -97,12 +97,12 @@ def process_meeting_task(self, meeting_id: str, job_id: str):
         db.commit()
         update_progress(db, job, meeting, 65, "Diarization klar")
 
-        # Step 4: Alignment
+        # Step 5: Alignment
         update_progress(db, job, meeting, 67, "Synkroniserar talare med text...")
         aligned = align_segments(whisper_segments, diarization_segments)
         update_progress(db, job, meeting, 75, "Synkronisering klar")
 
-        # Step 5: Speaker identification
+        # Step 6: Speaker identification
         update_progress(db, job, meeting, 77, "Identifierar talare...")
 
         speaker_labels = list(set(s["speaker"] for s in aligned if s["speaker"] != "UNKNOWN"))
@@ -147,7 +147,7 @@ def process_meeting_task(self, meeting_id: str, job_id: str):
             unknown_speaker = Speaker(
                 meeting_id=meeting.id,
                 label="UNKNOWN",
-                display_name="Okand",
+                display_name="Okand",  # Swedish for "Unknown"
                 color="#9ca3af",
             )
             db.add(unknown_speaker)

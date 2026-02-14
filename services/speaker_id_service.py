@@ -101,4 +101,5 @@ class SpeakerIdService:
         return result
 
     def get_color(self, index: int) -> str:
+        """Return a color from the palette, cycling if index exceeds palette size."""
         return SPEAKER_COLORS[index % len(SPEAKER_COLORS)]

@@ -24,7 +24,7 @@ class Action(Base):
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "name": self.name,
@@ -48,7 +48,7 @@ class ActionResult(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     completed_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "action_id": self.action_id,
@@ -57,7 +57,7 @@ class ActionResult(Base):
             "result_text": self.result_text,
             "error": self.error,
             "celery_task_id": self.celery_task_id,
-            "is_encrypted": self.is_encrypted or False,
+            "is_encrypted": bool(self.is_encrypted),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
         }

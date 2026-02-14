@@ -41,7 +41,7 @@ class Job(Base):
 
     meeting = relationship("Meeting", back_populates="jobs")
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "meeting_id": self.meeting_id,

@@ -45,7 +45,7 @@ class Meeting(Base):
     intro_end_time: Mapped[float] = mapped_column(Float, nullable=True)
     raw_diarization: Mapped[dict] = mapped_column(JSON, nullable=True)
     raw_transcription: Mapped[dict] = mapped_column(JSON, nullable=True)
-    mode: Mapped[str] = mapped_column(String, default="upload")
+    mode: Mapped[str] = mapped_column(String, default=MeetingMode.UPLOAD.value)
     recording_status: Mapped[str] = mapped_column(String, nullable=True)
     polish_history: Mapped[dict] = mapped_column(JSON, nullable=True)
     is_encrypted: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -58,7 +58,7 @@ class Meeting(Base):
     segments = relationship("Segment", back_populates="meeting", cascade="all, delete-orphan", order_by="Segment.order")
     jobs = relationship("Job", back_populates="meeting", cascade="all, delete-orphan")
 
-    def to_dict(self, include_segments=False):
+    def to_dict(self, include_segments: bool = False) -> dict:
         d = {
             "id": self.id,
             "title": self.title,
@@ -72,7 +72,7 @@ class Meeting(Base):
             "recording_status": self.recording_status,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "is_encrypted": self.is_encrypted or False,
+            "is_encrypted": bool(self.is_encrypted),
             "speaker_count": len(self.speakers) if self.speakers else 0,
             "segment_count": len(self.segments) if self.segments else 0,
         }

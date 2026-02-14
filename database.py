@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from config import settings
+
+log = logging.getLogger(__name__)
 
 engine = create_engine(
     settings.database_url,
@@ -36,8 +39,8 @@ def init_db():
                 conn.execute(text(
                     f"ALTER TYPE meetingstatus ADD VALUE IF NOT EXISTS '{val}'"
                 ))
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug(f"Enum value meetingstatus.{val}: {e}")
 
         # Add new JobType enum values
         for val in ("POLISH_PASS", "FINALIZE_LIVE"):
@@ -45,8 +48,8 @@ def init_db():
                 conn.execute(text(
                     f"ALTER TYPE jobtype ADD VALUE IF NOT EXISTS '{val}'"
                 ))
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug(f"Enum value jobtype.{val}: {e}")
 
         conn.commit()
 
@@ -66,8 +69,8 @@ def init_db():
         for sql in migrations:
             try:
                 conn.execute(text(sql))
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug(f"Migration skipped: {sql[:60]}... ({e})")
         conn.commit()
 
 
@@ -95,7 +98,7 @@ def recover_stale_jobs():
                 meeting.status = MeetingStatus.FAILED
         if stale_jobs:
             db.commit()
-            print(f"[Startup] Recovered {len(stale_jobs)} stale job(s)")
+            log.info(f"Recovered {len(stale_jobs)} stale job(s)")
     finally:
         db.close()
 

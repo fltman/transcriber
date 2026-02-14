@@ -10,6 +10,8 @@ from models.action import Action, ActionResult
 
 router = APIRouter(prefix="/api", tags=["export"])
 
+UNKNOWN_SPEAKER = "Okand"
+
 
 def format_srt_time(seconds: float) -> str:
     h = int(seconds // 3600)
@@ -75,7 +77,7 @@ def export_meeting(
 def _export_srt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     lines = []
     for i, seg in enumerate(segments, 1):
-        speaker = seg.speaker.display_name if seg.speaker else "Okand"
+        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
         lines.append(str(i))
         lines.append(f"{format_srt_time(seg.start_time)} --> {format_srt_time(seg.end_time)}")
         lines.append(f"[{speaker}] {seg.text}")
@@ -93,7 +95,7 @@ def _export_srt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
 def _export_vtt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     lines = ["WEBVTT", ""]
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else "Okand"
+        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
         lines.append(f"{format_vtt_time(seg.start_time)} --> {format_vtt_time(seg.end_time)}")
         lines.append(f"<v {speaker}>{seg.text}")
         lines.append("")
@@ -111,7 +113,7 @@ def _export_txt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     lines = []
     current_speaker = None
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else "Okand"
+        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
         if speaker != current_speaker:
             if lines:
                 lines.append("")
@@ -138,7 +140,7 @@ def _export_json(meeting: Meeting, segments: list[Segment]) -> JSONResponse:
             {
                 "start": seg.start_time,
                 "end": seg.end_time,
-                "speaker": seg.speaker.display_name if seg.speaker else "Okand",
+                "speaker": seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER,
                 "text": seg.text,
             }
             for seg in segments
@@ -160,7 +162,7 @@ def _export_md(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
 
     current_speaker = None
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else "Okand"
+        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
         if speaker != current_speaker:
             lines.append("")
             ts = format_timestamp_short(seg.start_time)
@@ -194,7 +196,7 @@ def _export_docx(meeting: Meeting, segments: list[Segment]) -> StreamingResponse
 
     current_speaker = None
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else "Okand"
+        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
         if speaker != current_speaker:
             ts = format_timestamp_short(seg.start_time)
             doc.add_heading(f"{speaker} [{ts}]", level=3)
@@ -262,7 +264,7 @@ def _export_pdf(meeting: Meeting, segments: list[Segment]) -> StreamingResponse:
 
     current_speaker = None
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else "Okand"
+        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
         if speaker != current_speaker:
             ts = format_timestamp_short(seg.start_time)
             story.append(Paragraph(f"{speaker} [{ts}]", speaker_style))

@@ -22,7 +22,7 @@ class Speaker(Base):
     meeting = relationship("Meeting", back_populates="speakers")
     segments = relationship("Segment", back_populates="speaker")
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "meeting_id": self.meeting_id,

@@ -88,7 +88,7 @@ def decrypt_meeting(meeting_id: str, req: DecryptRequest, db: Session = Depends(
     # Decrypt action result texts
     results = db.query(ActionResult).filter(
         ActionResult.meeting_id == meeting_id,
-        ActionResult.is_encrypted == True,
+        ActionResult.is_encrypted.is_(True),
     ).all()
     for r in results:
         if r.result_text:
