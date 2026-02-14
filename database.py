@@ -44,7 +44,7 @@ def init_db():
                 log.debug(f"Enum value meetingstatus.{val}: {e}")
 
         # Add new JobType enum values
-        for val in ("POLISH_PASS", "FINALIZE_LIVE"):
+        for val in ("POLISH_PASS", "FINALIZE_LIVE", "REDIARIZE", "REIDENTIFY"):
             try:
                 conn.execute(text(
                     f"ALTER TYPE jobtype ADD VALUE IF NOT EXISTS '{val}'"
@@ -65,6 +65,9 @@ def init_db():
         "ALTER TABLE meetings ADD COLUMN IF NOT EXISTS encryption_salt TEXT",
         "ALTER TABLE meetings ADD COLUMN IF NOT EXISTS encryption_verify TEXT",
         "ALTER TABLE action_results ADD COLUMN IF NOT EXISTS is_encrypted BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE meetings ADD COLUMN IF NOT EXISTS vocabulary TEXT",
+        # Full-text search index on segment text
+        "CREATE INDEX IF NOT EXISTS ix_segments_text_search ON segments USING gin (to_tsvector('simple', text))",
     ]
     with engine.connect() as conn:
         for sql in migrations:

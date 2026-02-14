@@ -33,10 +33,11 @@ class LiveTranscriptionSession:
     The real speaker identification happens in polish passes (pyannote + LLM).
     """
 
-    def __init__(self, meeting_id: str, meeting_path: Path, whisper_model_path: str | None = None):
+    def __init__(self, meeting_id: str, meeting_path: Path, whisper_model_path: str | None = None, vocabulary: str | None = None):
         self.meeting_id = meeting_id
         self.meeting_path = meeting_path
         self.whisper_model_path = whisper_model_path
+        self.vocabulary = vocabulary
         self.audio_path = str(meeting_path / "audio.wav")
         self.pcm_path = str(meeting_path / "audio.raw")
         self.total_pcm_samples = 0
@@ -102,7 +103,7 @@ class LiveTranscriptionSession:
         # 6. Transcribe
         try:
             raw_segments = await loop.run_in_executor(
-                None, self.whisper_service.transcribe_chunk, temp_wav, self.whisper_model_path, prompt
+                None, self.whisper_service.transcribe_chunk, temp_wav, self.whisper_model_path, prompt, self.vocabulary
             )
         except Exception as e:
             print(f"Whisper chunk error: {e}")
@@ -324,7 +325,7 @@ async def live_websocket(websocket: WebSocket, meeting_id: str):
     # Get whisper model for live transcription from presets
     live_whisper = get_model_config().get_model_for_task("live_transcription")
     live_whisper_model = live_whisper.get("model_path") if live_whisper else None
-    session = LiveTranscriptionSession(meeting_id, meeting_path, whisper_model_path=live_whisper_model)
+    session = LiveTranscriptionSession(meeting_id, meeting_path, whisper_model_path=live_whisper_model, vocabulary=meeting.vocabulary)
 
     async def relay_redis():
         """Forward Redis pub/sub messages (polish/finalize results) to WS client."""

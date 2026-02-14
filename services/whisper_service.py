@@ -10,10 +10,11 @@ class WhisperService:
         self.cli_path = settings.whisper_cli_path
         self.model_path = settings.whisper_model_path
 
-    def transcribe(self, audio_path: str) -> list[dict]:
+    def transcribe(self, audio_path: str, vocabulary: str | None = None) -> list[dict]:
         """
         Transcribe audio using whisper-cli.
         Returns list of {start, end, text} dicts.
+        vocabulary: domain-specific terms to prime Whisper (passed as --prompt).
         """
         output_json = audio_path + ".json"
 
@@ -25,6 +26,8 @@ class WhisperService:
             "-oj",  # output JSON
             "-of", audio_path,  # output file prefix (creates audio.wav.json)
         ]
+        if vocabulary:
+            cmd.extend(["--prompt", vocabulary[:500]])
 
         result = subprocess.run(
             cmd,
@@ -55,11 +58,12 @@ class WhisperService:
 
         return segments
 
-    def transcribe_chunk(self, audio_path: str, model_path: str | None = None, prompt: str | None = None) -> list[dict]:
+    def transcribe_chunk(self, audio_path: str, model_path: str | None = None, prompt: str | None = None, vocabulary: str | None = None) -> list[dict]:
         """
         Transcribe a short audio chunk using whisper-cli.
         Uses the small model by default for speed. Same output format as transcribe().
         prompt: previous transcription text for context continuity.
+        vocabulary: domain-specific terms prepended to prompt.
         """
         model = model_path or settings.whisper_small_model_path
         output_json = audio_path + ".json"
@@ -73,9 +77,14 @@ class WhisperService:
             "-of", audio_path,
             "--no-speech-thold", "0.5",  # Skip segments with high no-speech probability
         ]
+        # Build prompt: vocabulary terms + previous transcription context
+        full_prompt_parts = []
+        if vocabulary:
+            full_prompt_parts.append(vocabulary[:300])
         if prompt:
-            # Pass last transcription as initial prompt for continuity
-            cmd.extend(["--prompt", prompt[-200:]])
+            full_prompt_parts.append(prompt[-200:])
+        if full_prompt_parts:
+            cmd.extend(["--prompt", " ".join(full_prompt_parts)])
 
         result = subprocess.run(
             cmd,

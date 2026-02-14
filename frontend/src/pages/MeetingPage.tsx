@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getMeeting, startProcessing, getJobs } from "../api";
+import { getMeeting, startProcessing, getJobs, rediarizeMeeting, reidentifyMeeting } from "../api";
 import { useStore } from "../store";
 import type { ProgressUpdate } from "../types";
 import TranscriptView from "../components/TranscriptView";
@@ -27,6 +27,7 @@ export default function MeetingPage() {
   const [showExport, setShowExport] = useState(false);
   const [showEncrypt, setShowEncrypt] = useState(false);
   const [showDecrypt, setShowDecrypt] = useState(false);
+  const [showReprocess, setShowReprocess] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"speakers" | "actions">("speakers");
   const [actionEvent, setActionEvent] = useState<ProgressUpdate | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -129,6 +130,22 @@ export default function MeetingPage() {
     if (!id) return;
     await startProcessing(id);
     setProgress({ type: "progress", progress: 0, step: "Starting...", status: "processing" });
+    loadMeeting();
+  }
+
+  async function handleRediarize() {
+    if (!id) return;
+    setShowReprocess(false);
+    await rediarizeMeeting(id);
+    setProgress({ type: "progress", progress: 0, step: "Re-diarizing...", status: "processing" });
+    loadMeeting();
+  }
+
+  async function handleReidentify() {
+    if (!id) return;
+    setShowReprocess(false);
+    await reidentifyMeeting(id);
+    setProgress({ type: "progress", progress: 0, step: "Re-identifying...", status: "processing" });
     loadMeeting();
   }
 
@@ -256,6 +273,52 @@ export default function MeetingPage() {
                     Encrypt
                   </span>
                 </button>
+              )}
+              {/* Reprocess dropdown */}
+              {!currentMeeting.is_encrypted && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowReprocess(!showReprocess)}
+                    className="px-4 py-2.5 bg-slate-800 text-slate-400 border border-slate-700/50 rounded-xl font-medium hover:text-white hover:border-slate-600 transition-all"
+                    title="Reprocess options"
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Reprocess
+                    </span>
+                  </button>
+                  {showReprocess && (
+                    <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowReprocess(false)} />
+                    <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 z-20 min-w-[220px]">
+                      <button
+                        onClick={handleRediarize}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-700 transition"
+                      >
+                        <div className="text-sm text-white font-medium">Re-diarize</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Re-assign speakers without re-transcribing</div>
+                      </button>
+                      <button
+                        onClick={handleReidentify}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-700 transition"
+                      >
+                        <div className="text-sm text-white font-medium">Re-identify speakers</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Re-run AI speaker naming only</div>
+                      </button>
+                      <div className="border-t border-slate-700 my-1" />
+                      <button
+                        onClick={handleProcess}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-700 transition"
+                      >
+                        <div className="text-sm text-white font-medium">Full reprocess</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Re-transcribe and re-diarize everything</div>
+                      </button>
+                    </div>
+                    </>
+                  )}
+                </div>
               )}
               <button
                 onClick={() => setShowExport(true)}
@@ -417,6 +480,7 @@ export default function MeetingPage() {
                   speakers={currentMeeting.speakers || []}
                   segments={currentMeeting.segments}
                   onUpdate={loadMeeting}
+                  meetingId={currentMeeting.id}
                 />
               ) : (
                 <ActionsPanel

@@ -10,9 +10,9 @@ from pydantic import BaseModel
 from sqlalchemy import func
 
 from database import get_db
-from models import Meeting, Job, MeetingStatus, Speaker, Segment
+from models import Meeting, MeetingStatus, Speaker, Segment
 from models.meeting import MeetingMode, RecordingStatus
-from models.job import JobType, JobStatus
+from models.job import Job, JobType, JobStatus
 from config import get_meeting_path
 from tasks.process_meeting import process_meeting_task
 
@@ -56,6 +56,7 @@ async def create_meeting(
     file: UploadFile = File(...),
     min_speakers: int = Form(None),
     max_speakers: int = Form(None),
+    vocabulary: str = Form(None),
     db: Session = Depends(get_db),
 ):
     # Validate title
@@ -83,12 +84,22 @@ async def create_meeting(
     if min_speakers and max_speakers and min_speakers > max_speakers:
         raise HTTPException(400, "min_speakers cannot exceed max_speakers")
 
+    # Use global default vocabulary if none provided
+    from preferences import load_preferences
+    effective_vocab = vocabulary.strip()[:2000] if vocabulary else None
+    if not effective_vocab:
+        prefs = load_preferences()
+        default_vocab = prefs.get("default_vocabulary", "")
+        if default_vocab:
+            effective_vocab = default_vocab
+
     meeting = Meeting(
         title=title,
         original_filename=safe_filename,
         status=MeetingStatus.UPLOADED,
         min_speakers=min_speakers,
         max_speakers=max_speakers,
+        vocabulary=effective_vocab,
     )
     db.add(meeting)
     db.flush()
@@ -181,15 +192,26 @@ def start_processing(meeting_id: str, db: Session = Depends(get_db)):
 
 class LiveMeetingRequest(BaseModel):
     title: str
+    vocabulary: str | None = None
 
 
 @router.post("/live")
 def create_live_meeting(req: LiveMeetingRequest, db: Session = Depends(get_db)):
+    # Use global default vocabulary if none provided
+    from preferences import load_preferences
+    effective_vocab = req.vocabulary.strip()[:2000] if req.vocabulary else None
+    if not effective_vocab:
+        prefs = load_preferences()
+        default_vocab = prefs.get("default_vocabulary", "")
+        if default_vocab:
+            effective_vocab = default_vocab
+
     meeting = Meeting(
         title=req.title,
         status=MeetingStatus.RECORDING,
         mode=MeetingMode.LIVE.value,
         recording_status=RecordingStatus.RECORDING.value,
+        vocabulary=effective_vocab,
     )
     db.add(meeting)
     db.commit()
@@ -198,6 +220,82 @@ def create_live_meeting(req: LiveMeetingRequest, db: Session = Depends(get_db)):
     get_meeting_path(meeting.id)
 
     return meeting.to_dict()
+
+
+@router.post("/{meeting_id}/rediarize")
+def rediarize_meeting(meeting_id: str, db: Session = Depends(get_db)):
+    """Re-run diarization without re-transcribing."""
+    from sqlalchemy import update as sql_update
+    from tasks.reprocess_task import rediarize_task
+
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(404, "Meeting not found")
+    if meeting.status == MeetingStatus.PROCESSING:
+        raise HTTPException(400, "Already processing")
+    if not meeting.raw_transcription:
+        raise HTTPException(400, "No transcription data. Run full processing first.")
+
+    rows = db.execute(
+        sql_update(Meeting)
+        .where(Meeting.id == meeting_id)
+        .where(Meeting.status != MeetingStatus.PROCESSING)
+        .values(status=MeetingStatus.PROCESSING)
+    )
+    if rows.rowcount == 0:
+        db.rollback()
+        raise HTTPException(409, "Meeting is already being processed")
+
+    job = Job(
+        meeting_id=meeting.id,
+        job_type=JobType.REDIARIZE,
+        status=JobStatus.PENDING,
+    )
+    db.add(job)
+    db.commit()
+
+    result = rediarize_task.delay(meeting.id, job.id)
+    job.celery_task_id = result.id
+    db.commit()
+    return job.to_dict()
+
+
+@router.post("/{meeting_id}/reidentify")
+def reidentify_meeting(meeting_id: str, db: Session = Depends(get_db)):
+    """Re-run speaker identification without re-transcribing or re-diarizing."""
+    from sqlalchemy import update as sql_update
+    from tasks.reprocess_task import reidentify_task
+
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(404, "Meeting not found")
+    if meeting.status == MeetingStatus.PROCESSING:
+        raise HTTPException(400, "Already processing")
+    if not meeting.raw_transcription or not meeting.raw_diarization:
+        raise HTTPException(400, "No transcription/diarization data. Run full processing first.")
+
+    rows = db.execute(
+        sql_update(Meeting)
+        .where(Meeting.id == meeting_id)
+        .where(Meeting.status != MeetingStatus.PROCESSING)
+        .values(status=MeetingStatus.PROCESSING)
+    )
+    if rows.rowcount == 0:
+        db.rollback()
+        raise HTTPException(409, "Meeting is already being processed")
+
+    job = Job(
+        meeting_id=meeting.id,
+        job_type=JobType.REIDENTIFY,
+        status=JobStatus.PENDING,
+    )
+    db.add(job)
+    db.commit()
+
+    result = reidentify_task.delay(meeting.id, job.id)
+    job.celery_task_id = result.id
+    db.commit()
+    return job.to_dict()
 
 
 @router.get("/{meeting_id}/jobs")

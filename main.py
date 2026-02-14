@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from config import settings as _settings
 from database import init_db, seed_default_actions, recover_stale_jobs, cleanup_orphaned_storage, get_db, engine
 from models import Meeting
-from api import meetings, speakers, segments, export, websocket, live_websocket, actions, model_settings, encryption
+from api import meetings, speakers, segments, export, websocket, live_websocket, actions, model_settings, encryption, search, speaker_profiles
 
 app = FastAPI(title="Transcriber")
 
@@ -35,6 +35,8 @@ app.include_router(live_websocket.router)
 app.include_router(actions.router)
 app.include_router(model_settings.router)
 app.include_router(encryption.router)
+app.include_router(search.router)
+app.include_router(speaker_profiles.router)
 
 
 @app.on_event("startup")
@@ -110,9 +112,25 @@ def health():
 
 @app.get("/api/settings")
 def get_settings():
+    from preferences import load_preferences
+    prefs = load_preferences()
     return {
         "llm_provider": _settings.llm_provider,
         "openrouter_model": _settings.openrouter_model,
         "ollama_model": _settings.ollama_model,
         "ollama_base_url": _settings.ollama_base_url,
+        "preferences": prefs,
     }
+
+
+@app.put("/api/settings/preferences")
+def update_preferences(body: dict):
+    from preferences import save_preferences, load_preferences
+    current = load_preferences()
+    # Only update known fields
+    if "default_vocabulary" in body:
+        current["default_vocabulary"] = (body["default_vocabulary"] or "").strip()[:2000]
+    if "speaker_profiles_enabled" in body:
+        current["speaker_profiles_enabled"] = bool(body["speaker_profiles_enabled"])
+    save_preferences(current)
+    return current

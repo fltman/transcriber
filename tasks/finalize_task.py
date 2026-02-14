@@ -60,7 +60,7 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
 
         # Step 1: Re-transcribe with medium (high-quality) model
         update_progress(db, job, meeting, 10, "Transkriberar med högkvalitetsmodell...")
-        whisper_segments = whisper_service.transcribe(audio_path)
+        whisper_segments = whisper_service.transcribe(audio_path, vocabulary=meeting.vocabulary)
         meeting.raw_transcription = whisper_segments
         db.commit()
         update_progress(db, job, meeting, 40, "Transkribering klar")

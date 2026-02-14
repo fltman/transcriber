@@ -133,9 +133,22 @@ export default function TranscriptView({ segments, speakers, audioRef, onUpdate,
               <span className="text-sm font-semibold text-slate-200 transition-all duration-500">
                 {speaker?.display_name || speaker?.label || "Unknown"}
               </span>
-              <span className="text-xs text-slate-600 font-mono">
-                {formatTime(group.segments[0].start_time)}
-              </span>
+              {!isLive ? (
+                <button
+                  onClick={() => seekTo(group.segments[0].start_time)}
+                  className="text-xs text-slate-600 font-mono hover:text-violet-400 transition flex items-center gap-1 group/hdr"
+                  title="Play from here"
+                >
+                  <svg className="w-3 h-3 opacity-0 group-hover/hdr:opacity-100 transition" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  {formatTime(group.segments[0].start_time)}
+                </button>
+              ) : (
+                <span className="text-xs text-slate-600 font-mono">
+                  {formatTime(group.segments[0].start_time)}
+                </span>
+              )}
             </div>
 
             {/* Segments */}
@@ -154,10 +167,16 @@ export default function TranscriptView({ segments, speakers, audioRef, onUpdate,
                   >
                     <button
                       onClick={() => !isLive && seekTo(seg.start_time)}
-                      className={`text-xs mt-0.5 flex-shrink-0 w-10 font-mono transition ${
+                      className={`text-xs mt-0.5 flex-shrink-0 font-mono transition flex items-center gap-1 ${
                         isActive ? "text-violet-400" : "text-slate-600 hover:text-violet-400"
-                      } ${isLive ? "cursor-default" : ""}`}
+                      } ${isLive ? "cursor-default" : "group/play"}`}
+                      title={isLive ? undefined : "Click to play from here"}
                     >
+                      {!isLive && (
+                        <svg className="w-3 h-3 opacity-0 group-hover/play:opacity-100 transition" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      )}
                       {formatTime(seg.start_time)}
                     </button>
 

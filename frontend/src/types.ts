@@ -8,6 +8,7 @@ export interface Meeting {
   min_speakers: number | null;
   max_speakers: number | null;
   mode: "upload" | "live";
+  vocabulary: string | null;
   recording_status: "recording" | "stopped" | "finalizing" | "complete" | null;
   created_at: string;
   updated_at: string;

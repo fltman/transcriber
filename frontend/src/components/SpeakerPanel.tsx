@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Speaker, Segment } from "../types";
-import { updateSpeaker, mergeSpeakers } from "../api";
+import { updateSpeaker, mergeSpeakers, saveProfileFromSpeaker } from "../api";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -12,13 +12,30 @@ interface Props {
   speakers: Speaker[];
   segments: Segment[];
   onUpdate: () => void;
+  meetingId?: string;
 }
 
-export default function SpeakerPanel({ speakers, segments, onUpdate }: Props) {
+export default function SpeakerPanel({ speakers, segments, onUpdate, meetingId }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [mergeMode, setMergeMode] = useState(false);
   const [mergeSource, setMergeSource] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState<string | null>(null);
+  const [savedProfile, setSavedProfile] = useState<string | null>(null);
+
+  async function handleSaveProfile(speaker: Speaker) {
+    if (!meetingId) return;
+    setSavingProfile(speaker.id);
+    try {
+      await saveProfileFromSpeaker(speaker.id, meetingId, speaker.display_name || undefined);
+      setSavedProfile(speaker.id);
+      setTimeout(() => setSavedProfile(null), 2000);
+    } catch (err) {
+      console.error("Failed to save voice profile:", err);
+    } finally {
+      setSavingProfile(null);
+    }
+  }
 
   async function saveName(id: string) {
     if (editName.trim()) {
@@ -138,6 +155,9 @@ export default function SpeakerPanel({ speakers, segments, onUpdate }: Props) {
                 {s.identified_by === "intro_llm" && (
                   <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">AI</span>
                 )}
+                {s.identified_by === "voice_profile" && (
+                  <span className="text-[10px] font-medium text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded" title={`Matched with ${Math.round((s.confidence || 0) * 100)}% confidence`}>Voice</span>
+                )}
               </div>
 
               {/* Speaking time bar */}
@@ -153,7 +173,30 @@ export default function SpeakerPanel({ speakers, segments, onUpdate }: Props) {
                     {formatTime(s.total_speaking_time)}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-600 mt-0.5">{s.segment_count} {s.segment_count === 1 ? "segment" : "segments"}</p>
+                <div className="flex items-center justify-between mt-0.5">
+                  <p className="text-[10px] text-slate-600">{s.segment_count} {s.segment_count === 1 ? "segment" : "segments"}</p>
+                  {meetingId && !mergeMode && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleSaveProfile(s); }}
+                      disabled={savingProfile === s.id}
+                      className="text-[10px] text-slate-600 hover:text-violet-400 transition flex items-center gap-1"
+                      title="Save voice profile for future matching"
+                    >
+                      {savedProfile === s.id ? (
+                        <span className="text-emerald-400">Saved!</span>
+                      ) : savingProfile === s.id ? (
+                        <span className="text-slate-500">Saving...</span>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          Save voice
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

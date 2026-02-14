@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import { listMeetings, createMeeting, createLiveMeeting, deleteMeeting, listActionResults, getActionResultExportUrl } from "../api";
+import { listMeetings, createMeeting, createLiveMeeting, deleteMeeting, listActionResults, getActionResultExportUrl, searchSegments } from "../api";
 import type { ActionResult } from "../types";
+import type { SearchResult } from "../api";
 import { useStore } from "../store";
 import AudioSourceSelect, { getAudioStream } from "../components/AudioSourceSelect";
 
@@ -35,6 +36,7 @@ export default function HomePage() {
   const [title, setTitle] = useState("");
   const [minSpeakers, setMinSpeakers] = useState("");
   const [maxSpeakers, setMaxSpeakers] = useState("");
+  const [vocabulary, setVocabulary] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -54,6 +56,32 @@ export default function HomePage() {
 
   // Error feedback
   const [error, setError] = useState<string | null>(null);
+
+  // Search
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimerRef = useRef<number>(0);
+
+  function handleSearchChange(value: string) {
+    setSearchQuery(value);
+    clearTimeout(searchTimerRef.current);
+    if (!value.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    searchTimerRef.current = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await searchSegments(value.trim());
+        setSearchResults(results);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+  }
 
   // Action results expansion
   const [expandedMeetingId, setExpandedMeetingId] = useState<string | null>(null);
@@ -98,6 +126,7 @@ export default function HomePage() {
       form.append("title", title.trim());
       if (minSpeakers) form.append("min_speakers", minSpeakers);
       if (maxSpeakers) form.append("max_speakers", maxSpeakers);
+      if (vocabulary.trim()) form.append("vocabulary", vocabulary.trim());
 
       const meeting = await createMeeting(form);
       setError(null);
@@ -116,7 +145,7 @@ export default function HomePage() {
     if (!title.trim()) return;
     setUploading(true);
     try {
-      const meeting = await createLiveMeeting(title.trim());
+      const meeting = await createLiveMeeting(title.trim(), vocabulary.trim() || undefined);
       setError(null);
       setShowUpload(false);
       resetDialog();
@@ -134,6 +163,7 @@ export default function HomePage() {
     setSelectedFile(null);
     setMinSpeakers("");
     setMaxSpeakers("");
+    setVocabulary("");
     setRecording(false);
     setRecordingTime(0);
     setInputMode("file");
@@ -479,32 +509,45 @@ export default function HomePage() {
               className="w-full bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 mb-4"
             />
 
-            {/* Optional: speaker count (not for live) */}
-            {inputMode !== "live" && (
-              <details className="mb-5 group">
-                <summary className="text-sm text-slate-500 cursor-pointer hover:text-slate-300 transition">
-                  Advanced settings
-                </summary>
-                <div className="flex gap-3 mt-3">
-                  <input
-                    type="number"
-                    placeholder="Min speakers"
-                    value={minSpeakers}
-                    onChange={(e) => setMinSpeakers(e.target.value)}
-                    className="flex-1 bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                    min="1"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Max speakers"
-                    value={maxSpeakers}
-                    onChange={(e) => setMaxSpeakers(e.target.value)}
-                    className="flex-1 bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                    min="1"
-                  />
-                </div>
-              </details>
-            )}
+            {/* Advanced settings */}
+            <details className="mb-5 group">
+              <summary className="text-sm text-slate-500 cursor-pointer hover:text-slate-300 transition">
+                Advanced settings
+              </summary>
+              <div className="mt-3 space-y-3">
+                {inputMode !== "live" && (
+                  <div className="flex gap-3">
+                    <input
+                      type="number"
+                      placeholder="Min speakers"
+                      value={minSpeakers}
+                      onChange={(e) => setMinSpeakers(e.target.value)}
+                      className="flex-1 bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                      min="1"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max speakers"
+                      value={maxSpeakers}
+                      onChange={(e) => setMaxSpeakers(e.target.value)}
+                      className="flex-1 bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                      min="1"
+                    />
+                  </div>
+                )}
+                <textarea
+                  placeholder="Vocabulary priming (domain-specific terms, names, abbreviations...)"
+                  value={vocabulary}
+                  onChange={(e) => setVocabulary(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 text-sm resize-none"
+                  rows={2}
+                  maxLength={2000}
+                />
+                <p className="text-xs text-slate-600">
+                  Add names, technical terms, or abbreviations to improve transcription accuracy.
+                </p>
+              </div>
+            </details>
 
             {/* Error message */}
             {error && (
@@ -568,6 +611,77 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* Search bar */}
+      <div className="mb-6 relative">
+        <div className="relative">
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search across all transcriptions..."
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="w-full bg-slate-900/50 border border-slate-800/50 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/30 text-sm"
+          />
+          {searching && (
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 border border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+          )}
+          {searchQuery && !searching && (
+            <button
+              onClick={() => { setSearchQuery(""); setSearchResults([]); }}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Search results */}
+        {searchQuery && searchResults.length > 0 && (
+          <div className="mt-3 space-y-3">
+            <p className="text-xs text-slate-500">{searchResults.reduce((n, r) => n + r.segments.length, 0)} results in {searchResults.length} meeting(s)</p>
+            {searchResults.map((result) => (
+              <div key={result.meeting_id} className="bg-slate-900/50 border border-slate-800/50 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => navigate(`/meetings/${result.meeting_id}`)}
+                  className="w-full px-4 py-2.5 text-left hover:bg-slate-800/50 transition border-b border-slate-800/30"
+                >
+                  <span className="text-sm font-semibold text-violet-400">{result.meeting_title}</span>
+                </button>
+                <div className="divide-y divide-slate-800/30">
+                  {result.segments.slice(0, 5).map((seg) => (
+                    <button
+                      key={seg.id}
+                      onClick={() => navigate(`/meetings/${result.meeting_id}`)}
+                      className="w-full px-4 py-2 text-left hover:bg-slate-800/30 transition flex items-start gap-3"
+                    >
+                      <span className="text-xs text-slate-600 font-mono mt-0.5 flex-shrink-0 w-10">
+                        {Math.floor(seg.start_time / 60)}:{Math.floor(seg.start_time % 60).toString().padStart(2, "0")}
+                      </span>
+                      {seg.speaker_color && (
+                        <span className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: seg.speaker_color }} />
+                      )}
+                      <span className="text-sm text-slate-300 line-clamp-2">{seg.text}</span>
+                    </button>
+                  ))}
+                  {result.segments.length > 5 && (
+                    <div className="px-4 py-1.5 text-xs text-slate-600">
+                      +{result.segments.length - 5} more matches
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {searchQuery && !searching && searchResults.length === 0 && (
+          <p className="mt-3 text-sm text-slate-600">No results found</p>
+        )}
+      </div>
 
       {/* Error banner (for delete errors outside dialog) */}
       {error && !showUpload && (

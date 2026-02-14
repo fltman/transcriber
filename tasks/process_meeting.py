@@ -1,5 +1,8 @@
 import json
+import logging
 from datetime import datetime
+
+log = logging.getLogger(__name__)
 
 from celery.exceptions import SoftTimeLimitExceeded
 
@@ -55,7 +58,7 @@ def process_meeting_task(self, meeting_id: str, job_id: str):
 
         # Step 2: Transcription (before diarization so LLM can count speakers)
         update_progress(db, job, meeting, 7, "Transkriberar med Whisper...")
-        whisper_segments = whisper_service.transcribe(audio_path)
+        whisper_segments = whisper_service.transcribe(audio_path, vocabulary=meeting.vocabulary)
         meeting.raw_transcription = whisper_segments
         db.commit()
         update_progress(db, job, meeting, 35, "Transkribering klar")
@@ -124,6 +127,68 @@ def process_meeting_task(self, meeting_id: str, job_id: str):
                 if offset > 0:
                     info["name"] = f"Deltagare {offset + i + 1}"
                 speaker_info[label] = info
+
+        # Step 6b: Match against saved speaker profiles (if enabled)
+        from preferences import load_preferences
+        prefs = load_preferences()
+        profiles = []
+        if prefs.get("speaker_profiles_enabled", True):
+            update_progress(db, job, meeting, 87, "Matchar mot sparade röstprofiler...")
+            from models.speaker_profile import SpeakerProfile
+            from services.embedding_service import EmbeddingService
+            profiles = db.query(SpeakerProfile).all()
+        if profiles:
+            embedding_service = EmbeddingService()
+            PROFILE_MATCH_THRESHOLD = 0.55
+
+            for label, info in speaker_info.items():
+                # Only try profile matching for speakers not already identified by intro/LLM
+                if info.get("identified_by") == "intro_llm" and info.get("confidence", 0) > 0.7:
+                    continue
+
+                # Extract embedding for this speaker from their segments
+                speaker_segs = [s for s in diarization_segments if s["speaker"] == label]
+                if not speaker_segs:
+                    continue
+
+                # Use the longest segment for best embedding quality
+                best_seg = max(speaker_segs, key=lambda s: s["end"] - s["start"])
+                if best_seg["end"] - best_seg["start"] < 2.0:
+                    continue
+
+                try:
+                    import subprocess, wave
+                    from pathlib import Path
+
+                    temp_spk = str(Path(audio_path).parent / f"profile_match_{label}.wav")
+                    subprocess.run([
+                        "ffmpeg", "-y",
+                        "-ss", str(best_seg["start"]),
+                        "-t", str(min(best_seg["end"] - best_seg["start"], 15)),
+                        "-i", audio_path,
+                        "-ar", "16000", "-ac", "1",
+                        temp_spk,
+                    ], capture_output=True, timeout=15)
+
+                    emb = embedding_service.extract_embedding(temp_spk)
+                    Path(temp_spk).unlink(missing_ok=True)
+
+                    # Compare against all profiles
+                    best_profile = None
+                    best_sim = 0.0
+                    for profile in profiles:
+                        profile_emb = profile.get_embedding()
+                        sim = embedding_service.cosine_similarity(emb, profile_emb)
+                        if sim > best_sim:
+                            best_sim = sim
+                            best_profile = profile
+
+                    if best_profile and best_sim >= PROFILE_MATCH_THRESHOLD:
+                        info["name"] = best_profile.name
+                        info["identified_by"] = "voice_profile"
+                        info["confidence"] = round(best_sim, 3)
+                except Exception as e:
+                    log.debug(f"Profile matching failed for {label}: {e}")
 
         update_progress(db, job, meeting, 90, "Sparar resultat...")
 

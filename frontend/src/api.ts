@@ -13,8 +13,8 @@ export async function createMeeting(form: FormData): Promise<Meeting> {
   return data;
 }
 
-export async function createLiveMeeting(title: string): Promise<Meeting> {
-  const { data } = await api.post("/meetings/live", { title });
+export async function createLiveMeeting(title: string, vocabulary?: string): Promise<Meeting> {
+  const { data } = await api.post("/meetings/live", { title, vocabulary: vocabulary || null });
   return data;
 }
 
@@ -29,6 +29,16 @@ export async function deleteMeeting(id: string): Promise<void> {
 
 export async function startProcessing(id: string): Promise<Job> {
   const { data } = await api.post(`/meetings/${id}/process`);
+  return data;
+}
+
+export async function rediarizeMeeting(id: string): Promise<Job> {
+  const { data } = await api.post(`/meetings/${id}/rediarize`);
+  return data;
+}
+
+export async function reidentifyMeeting(id: string): Promise<Job> {
+  const { data } = await api.post(`/meetings/${id}/reidentify`);
   return data;
 }
 
@@ -129,6 +139,60 @@ export async function updateModelSettings(assignments: Record<string, string>): 
   return data;
 }
 
+// --- Search ---
+
+export interface SearchResult {
+  meeting_id: string;
+  meeting_title: string;
+  segments: {
+    id: string;
+    start_time: number;
+    end_time: number;
+    text: string;
+    order: number;
+    speaker_name: string | null;
+    speaker_color: string | null;
+  }[];
+}
+
+export async function searchSegments(q: string): Promise<SearchResult[]> {
+  const { data } = await api.get("/search", { params: { q } });
+  return data;
+}
+
+// --- Speaker Profiles ---
+
+export interface SpeakerProfile {
+  id: string;
+  name: string;
+  sample_count: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function listSpeakerProfiles(): Promise<SpeakerProfile[]> {
+  const { data } = await api.get("/speaker-profiles");
+  return data;
+}
+
+export async function deleteSpeakerProfile(id: string): Promise<void> {
+  await api.delete(`/speaker-profiles/${id}`);
+}
+
+export async function saveProfileFromSpeaker(
+  speakerId: string,
+  meetingId: string,
+  name?: string
+): Promise<SpeakerProfile> {
+  const { data } = await api.post("/speaker-profiles/save-from-speaker", {
+    speaker_id: speakerId,
+    meeting_id: meetingId,
+    name: name || null,
+  });
+  return data;
+}
+
 // --- Encryption ---
 
 export async function encryptMeeting(
@@ -150,6 +214,23 @@ export async function decryptMeeting(
   const { data } = await api.post(`/meetings/${meetingId}/decrypt`, {
     password,
   });
+  return data;
+}
+
+// --- Preferences ---
+
+export interface Preferences {
+  default_vocabulary: string;
+  speaker_profiles_enabled: boolean;
+}
+
+export async function getPreferences(): Promise<Preferences> {
+  const { data } = await api.get("/settings");
+  return data.preferences;
+}
+
+export async function updatePreferences(prefs: Partial<Preferences>): Promise<Preferences> {
+  const { data } = await api.put("/settings/preferences", prefs);
   return data;
 }
 
