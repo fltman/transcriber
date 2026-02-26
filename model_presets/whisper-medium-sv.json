@@ -3,5 +3,5 @@
   "name": "Whisper Medium (Swedish)",
   "type": "whisper",
   "provider": "local",
-  "model_path": "/Users/andersbj/Projekt/whisper-flow/models/kb_whisper_ggml_medium.bin"
+  "model_path": null
 }
