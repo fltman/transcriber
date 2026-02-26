@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git /whisper.cpp
 
 WORKDIR /whisper.cpp
-RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF \
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF \
     && cmake --build build --config Release -j "$(nproc)"
 
 # ============================================================
@@ -46,11 +46,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Copy whisper.cpp binary and shared libraries from builder
+# Copy whisper.cpp static binary (no shared library dependencies)
 COPY --from=whisper-builder /whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
-COPY --from=whisper-builder /whisper.cpp/build/src/libwhisper.so* /usr/local/lib/
-COPY --from=whisper-builder /whisper.cpp/build/ggml/src/libggml*.so* /usr/local/lib/
-RUN ldconfig
 
 # Copy built frontend from builder
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
