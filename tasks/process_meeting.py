@@ -285,6 +285,8 @@ def process_meeting_task(self, meeting_id: str, job_id: str):
         return {"error": error_msg}
 
     except Exception as e:
+        import traceback
+        log.error(f"process_meeting_task failed: {e}\n{traceback.format_exc()}")
         db.rollback()
         job = db.query(Job).filter(Job.id == job_id).first()
         meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()

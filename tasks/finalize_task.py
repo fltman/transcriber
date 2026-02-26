@@ -211,6 +211,8 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
         return {"status": "completed", "meeting_id": meeting_id}
 
     except Exception as e:
+        import traceback, logging
+        logging.getLogger(__name__).error(f"finalize_live_task failed: {e}\n{traceback.format_exc()}")
         db.rollback()
         job = db.query(Job).filter(Job.id == job_id).first()
         meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()

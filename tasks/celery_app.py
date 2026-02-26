@@ -27,4 +27,5 @@ celery_app.conf.update(
     task_time_limit=3600,       # 60 min hard kill
     worker_prefetch_multiplier=1,
     result_expires=3600,
+    worker_redirect_stdouts_level="INFO",
 )
