@@ -1,6 +1,7 @@
 import torchaudio
 import torch
 from config import settings
+from preferences import get_secret
 
 # torchaudio 2.10+ removed list_audio_backends; pyannote still calls it
 if not hasattr(torchaudio, "list_audio_backends"):
@@ -28,8 +29,6 @@ class DiarizationService:
     def get_pipeline(cls):
         if cls._pipeline is None:
             from pyannote.audio import Pipeline
-            from preferences import get_secret
-
             kwargs = {}
             token = get_secret("hf_auth_token")
             if token:

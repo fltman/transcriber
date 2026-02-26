@@ -5,6 +5,7 @@ import re
 import requests
 
 from config import settings
+from preferences import get_secret
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +29,6 @@ class LLMService:
         return self._call_openrouter(messages, max_tokens)
 
     def _call_openrouter(self, messages: list[dict], max_tokens: int) -> str:
-        from preferences import get_secret
         headers = {
             "Authorization": f"Bearer {get_secret('openrouter_api_key')}",
             "Content-Type": "application/json",

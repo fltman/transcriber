@@ -16,6 +16,7 @@ from services.whisper_service import WhisperService
 from services.diarization_service import DiarizationService
 from services.speaker_id_service import SpeakerIdService
 from model_config import get_model_config
+from preferences import load_preferences
 
 
 @celery_app.task(bind=True)
@@ -129,7 +130,6 @@ def process_meeting_task(self, meeting_id: str, job_id: str):
                 speaker_info[label] = info
 
         # Step 6b: Match against saved speaker profiles (if enabled)
-        from preferences import load_preferences
         prefs = load_preferences()
         profiles = []
         if prefs.get("speaker_profiles_enabled", True):
