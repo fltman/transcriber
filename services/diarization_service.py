@@ -6,6 +6,20 @@ from config import settings
 if not hasattr(torchaudio, "list_audio_backends"):
     torchaudio.list_audio_backends = lambda: ["torchcodec"]
 
+# torchaudio 2.10+ removed AudioMetaData; pyannote still references it
+if not hasattr(torchaudio, "AudioMetaData"):
+    from dataclasses import dataclass
+
+    @dataclass
+    class _AudioMetaData:
+        sample_rate: int = 0
+        num_frames: int = 0
+        num_channels: int = 0
+        bits_per_sample: int = 0
+        encoding: str = ""
+
+    torchaudio.AudioMetaData = _AudioMetaData
+
 
 class DiarizationService:
     _pipeline = None

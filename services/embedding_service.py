@@ -6,6 +6,20 @@ import torchaudio
 if not hasattr(torchaudio, "list_audio_backends"):
     torchaudio.list_audio_backends = lambda: ["default"]
 
+# torchaudio 2.10+ removed AudioMetaData; pyannote/speechbrain still reference it
+if not hasattr(torchaudio, "AudioMetaData"):
+    from dataclasses import dataclass
+
+    @dataclass
+    class _AudioMetaData:
+        sample_rate: int = 0
+        num_frames: int = 0
+        num_channels: int = 0
+        bits_per_sample: int = 0
+        encoding: str = ""
+
+    torchaudio.AudioMetaData = _AudioMetaData
+
 from pathlib import Path
 import huggingface_hub
 
