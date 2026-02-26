@@ -1,0 +1,82 @@
+# Transcriber - Full self-contained stack
+# See README.md in this folder for setup instructions.
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "${PORT:-8080}:80"
+    environment:
+      DATABASE_URL: postgresql://transcriber:transcriber@postgres:5432/transcriber
+      REDIS_URL: redis://redis:6379/0
+      WHISPER_CLI_PATH: /usr/local/bin/whisper-cli
+      WHISPER_MODEL_PATH: /data/whisper-models/kb_whisper_ggml_medium.bin
+      WHISPER_SMALL_MODEL_PATH: /data/whisper-models/kb_whisper_ggml_small.bin
+      STORAGE_PATH: /app/storage
+      OLLAMA_BASE_URL: http://ollama:11434
+      CORS_ORIGINS: ""
+    volumes:
+      - whisper_models:/data/whisper-models
+      - app_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    extra_hosts:
+      - "host.gateway.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    # Uncomment for NVIDIA GPU passthrough:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: transcriber
+      POSTGRES_PASSWORD: transcriber
+      POSTGRES_DB: transcriber
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U transcriber"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  whisper_models:
+  app_storage:
+  ollama_data:

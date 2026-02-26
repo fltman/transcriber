@@ -1,0 +1,10 @@
+# Force LF line endings for files that run inside Linux containers
+# Without this, git on Windows converts to CRLF which breaks shell scripts
+docker/entrypoint.sh text eol=lf
+docker/nginx.conf text eol=lf
+docker/supervisord.conf text eol=lf
+*.sh text eol=lf
+*.command text eol=lf
+
+# Windows batch files need CRLF
+*.bat text eol=crlf

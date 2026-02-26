@@ -116,8 +116,8 @@ def health():
 
 @app.get("/api/settings")
 def get_settings():
-    from preferences import load_preferences
-    prefs = load_preferences()
+    from preferences import get_public_preferences
+    prefs = get_public_preferences()
     return {
         "llm_provider": _settings.llm_provider,
         "openrouter_model": _settings.openrouter_model,
@@ -129,12 +129,21 @@ def get_settings():
 
 @app.put("/api/settings/preferences")
 def update_preferences(body: dict):
-    from preferences import save_preferences, load_preferences
+    from preferences import save_preferences, load_preferences, get_public_preferences
     current = load_preferences()
     # Only update known fields
     if "default_vocabulary" in body:
         current["default_vocabulary"] = (body["default_vocabulary"] or "").strip()[:2000]
     if "speaker_profiles_enabled" in body:
         current["speaker_profiles_enabled"] = bool(body["speaker_profiles_enabled"])
+    if "hf_auth_token" in body:
+        val = (body["hf_auth_token"] or "").strip()
+        # Don't overwrite with the masked value
+        if val and "*" not in val:
+            current["hf_auth_token"] = val
+    if "openrouter_api_key" in body:
+        val = (body["openrouter_api_key"] or "").strip()
+        if val and "*" not in val:
+            current["openrouter_api_key"] = val
     save_preferences(current)
-    return current
+    return get_public_preferences()

@@ -28,8 +28,9 @@ class LLMService:
         return self._call_openrouter(messages, max_tokens)
 
     def _call_openrouter(self, messages: list[dict], max_tokens: int) -> str:
+        from preferences import get_secret
         headers = {
-            "Authorization": f"Bearer {settings.openrouter_api_key}",
+            "Authorization": f"Bearer {get_secret('openrouter_api_key')}",
             "Content-Type": "application/json",
         }
         payload = {

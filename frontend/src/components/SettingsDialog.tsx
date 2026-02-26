@@ -26,6 +26,8 @@ export default function SettingsDialog({ onClose }: Props) {
   const [prefs, setPrefs] = useState<Preferences | null>(null);
   const [defaultVocab, setDefaultVocab] = useState("");
   const [profilesEnabled, setProfilesEnabled] = useState(true);
+  const [hfToken, setHfToken] = useState("");
+  const [openrouterKey, setOpenrouterKey] = useState("");
   const [profiles, setProfiles] = useState<SpeakerProfile[]>([]);
   const [learnedVocab, setLearnedVocab] = useState<VocabularyEntry[]>([]);
 
@@ -45,6 +47,8 @@ export default function SettingsDialog({ onClose }: Props) {
     setPrefs(p);
     setDefaultVocab(p.default_vocabulary || "");
     setProfilesEnabled(p.speaker_profiles_enabled);
+    setHfToken(p.hf_auth_token || "");
+    setOpenrouterKey(p.openrouter_api_key || "");
     const profileList = await listSpeakerProfiles();
     setProfiles(profileList);
     const vocab = await listVocabulary();
@@ -61,6 +65,8 @@ export default function SettingsDialog({ onClose }: Props) {
       await updatePreferences({
         default_vocabulary: defaultVocab,
         speaker_profiles_enabled: profilesEnabled,
+        hf_auth_token: hfToken,
+        openrouter_api_key: openrouterKey,
       });
     }
     setSaving(false);
@@ -143,7 +149,50 @@ export default function SettingsDialog({ onClose }: Props) {
             })}
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-1">
+            {/* API Keys */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Hugging Face token
+              </label>
+              <p className="text-xs text-slate-500 mb-1.5">
+                Required for speaker diarization. Get one at{" "}
+                <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300">
+                  huggingface.co/settings/tokens
+                </a>
+              </p>
+              <input
+                type="password"
+                value={hfToken}
+                onChange={(e) => setHfToken(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                placeholder="hf_..."
+                autoComplete="off"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                OpenRouter API key
+              </label>
+              <p className="text-xs text-slate-500 mb-1.5">
+                Only needed if using OpenRouter as LLM provider.{" "}
+                <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300">
+                  openrouter.ai/keys
+                </a>
+              </p>
+              <input
+                type="password"
+                value={openrouterKey}
+                onChange={(e) => setOpenrouterKey(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                placeholder="sk-or-..."
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="border-t border-slate-800" />
+
             {/* Default vocabulary */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">

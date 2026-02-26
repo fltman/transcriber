@@ -14,10 +14,12 @@ class DiarizationService:
     def get_pipeline(cls):
         if cls._pipeline is None:
             from pyannote.audio import Pipeline
+            from preferences import get_secret
 
             kwargs = {}
-            if settings.hf_auth_token:
-                kwargs["token"] = settings.hf_auth_token
+            token = get_secret("hf_auth_token")
+            if token:
+                kwargs["token"] = token
 
             cls._pipeline = Pipeline.from_pretrained(
                 "pyannote/speaker-diarization-3.1",
