@@ -133,6 +133,7 @@ def cleanup_orphaned_storage():
 def seed_default_actions():
     """Create default actions if none exist."""
     from models.action import Action
+    from translations import get_translation
 
     db = SessionLocal()
     try:
@@ -141,34 +142,18 @@ def seed_default_actions():
 
         defaults = [
             Action(
-                name="Sammanfattning",
-                prompt=(
-                    "Du ar en motesassistent. Skriv en tydlig och koncis sammanfattning av motet. "
-                    "Inkludera: huvudamnen som diskuterades, viktiga beslut som fattades, "
-                    "och eventuella olosta fragor. Skriv pa svenska."
-                ),
+                name=get_translation('ui.summary'),
+                prompt=get_translation('prompts.summary'),
                 is_default=True,
             ),
             Action(
-                name="Atgardslista",
-                prompt=(
-                    "Du ar en motesassistent. Skapa en strukturerad atgardslista fran motet. "
-                    "For varje atgard, ange:\n"
-                    "- Vad som ska goras\n"
-                    "- Vem som ar ansvarig (om det framgar)\n"
-                    "- Deadline (om det namns)\n\n"
-                    "Formatera som en numrerad lista. Skriv pa svenska."
-                ),
+                name=get_translation('ui.todo'),
+                prompt=get_translation('prompts.todo'),
                 is_default=True,
             ),
             Action(
-                name="Avidentifierad version",
-                prompt=(
-                    "Du ar en integritetsspecialist. Skriv om transkriberingen sa att alla "
-                    "personnamn ersatts med 'Person A', 'Person B', 'Person C' osv. "
-                    "Ersatt aven organisationsnamn, platser och andra identifierande detaljer "
-                    "med generiska termer. Behall innehallet intakt. Skriv pa svenska."
-                ),
+                name=get_translation('ui.deidentified_version'),
+                prompt=get_translation('prompts.deidentified'),
                 is_default=True,
             ),
         ]

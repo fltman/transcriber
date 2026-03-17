@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from config import settings as _settings
 from database import init_db, seed_default_actions, recover_stale_jobs, cleanup_orphaned_storage, get_db, engine
 from models import Meeting
-from api import meetings, speakers, segments, export, websocket, live_websocket, actions, model_settings, encryption, search, speaker_profiles, vocabulary, insights, protocol, analytics
+from api import meetings, speakers, segments, export, websocket, live_websocket, actions, model_settings, encryption, search, speaker_profiles, vocabulary, insights, protocol, analytics, translations
 
 app = FastAPI(title="Transcriber")
 
@@ -41,6 +41,7 @@ app.include_router(vocabulary.router)
 app.include_router(insights.router)
 app.include_router(protocol.router)
 app.include_router(analytics.router)
+app.include_router(translations.router)
 
 
 @app.on_event("startup")
@@ -51,7 +52,10 @@ def startup():
     cleanup_orphaned_storage()
     import logging
     _log = logging.getLogger(__name__)
-    if not _settings.hf_auth_token or _settings.hf_auth_token == "hf_your_token_here":
+    if (
+        _settings.backend.strip().lower() == "torch"
+        and (not _settings.hf_auth_token or _settings.hf_auth_token == "hf_your_token_here")
+    ):
         _log.warning("HF_AUTH_TOKEN not set — speaker diarization will fail. "
                      "Set it in .env (get one at https://huggingface.co/settings/tokens)")
 
@@ -97,6 +101,7 @@ def health():
     # Whisper CLI
     whisper_path = Path(_settings.whisper_cli_path)
     checks["whisper_cli"] = "ok" if whisper_path.exists() else f"missing: {whisper_path}"
+    checks["backend"] = _settings.backend
 
     # Disk space
     storage_path = Path(_settings.storage_path)

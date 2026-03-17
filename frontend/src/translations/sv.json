@@ -1,0 +1,418 @@
+{
+  "app": {
+    "title": "Transcriber",
+    "tagline": "AI-driven transkribering",
+    "settings": "Modellstabillar"
+  },
+  "common": {
+    "unknown_speaker": "Okänd",
+    "participant": "Deltagare",
+    "loading": "Läser in...",
+    "error": "Fel",
+    "success": "Lyckat",
+    "cancel": "Avbryt",
+    "save": "Spara",
+    "delete": "Radera",
+    "close": "Stäng",
+    "remove": "Ta bort",
+    "add": "Lägg till",
+    "edit": "Redigera",
+    "search": "Sök",
+    "no_results": "Inga resultat hittades",
+    "confirm": "Bekräfta",
+    "password": "Lösenord",
+    "confirm_password": "Bekräfta lösenord",
+    "submit": "Skicka"
+  },
+  "meetings": {
+    "title": "Möten",
+    "new_meeting": "Nytt möte",
+    "upload_audio": "Ladda upp ljud",
+    "record_live": "Spela in live",
+    "live_mode": "Liveläge",
+    "search_placeholder": "Sök i alla möten...",
+    "status": {
+      "uploading": "Laddar upp",
+      "uploaded": "Uppladdad",
+      "processing": "Bearbetar",
+      "recording": "Spelar in",
+      "finalizing": "Slutför",
+      "completed": "Slutfört",
+      "failed": "Misslyckades"
+    },
+    "no_meetings": "Inga möten än",
+    "create_first": "Skapa ditt första möte genom att ladda upp en ljudfil eller starta en liveinspelning"
+  },
+  "meeting": {
+    "title": "Titel för transkriberingen",
+    "speakers": "Talare",
+    "segments": "Segment",
+    "duration": "Varaktighet",
+    "model": "Modell",
+    "reprocess": "Bearbeta om",
+    "reprocess_description": "Kör AI-analysen på detta möte igen",
+    "encrypt": "Kryptera",
+    "decrypt": "Dekryptera",
+    "unlock": "Lås upp möte",
+    "export": "Exportera",
+    "actions": "Åtgärder",
+    "insights": "Insikter",
+    "analytics": "Analys",
+    "transcript": "Transkription"
+  },
+  "meeting_page": {
+    "starting": "Startar...",
+    "rediarizing": "Diariserar om...",
+    "reidentifying": "Identifierar om...",
+    "speakers_count": "%count% talare",
+    "beta": "Beta",
+    "start_transcription": "Starta transkribering",
+    "reprocess_options": "Alternativ för ombearbetning",
+    "rediarize": "Diarisera om",
+    "rediarize_description": "Tilldela om talare utan att transkribera om",
+    "reidentify_speakers": "Identifiera talare igen",
+    "reidentify_description": "Kör endast om AI-namngivning av talare",
+    "full_reprocess": "Full ombearbetning",
+    "full_reprocess_description": "Transkribera och diarisera om allt",
+    "processing_failed": "Bearbetningen misslyckades",
+    "listening": "Lyssnar...",
+    "live_transcription_hint": "Transkriberingen visas medan du pratar",
+    "meeting_encrypted": "Mötet är krypterat",
+    "meeting_encrypted_description": "Den här transkriberingen är skyddad med lösenord. Klicka på \"Lås upp\" för att dekryptera och visa.",
+    "ready_to_transcribe": "Redo att transkribera",
+    "ready_to_transcribe_hint": "Klicka på \"Starta transkribering\" för att börja bearbeta"
+  },
+  "encryption": {
+    "encrypt": "Kryptera",
+    "decrypt": "Dekryptera",
+    "password_required": "Lösenord krävs",
+    "passwords_match": "Lösenorden måste matcha",
+    "passwords_do_not_match": "Lösenorden stämmer inte överens",
+    "encryption_failed": "Krypteringen misslyckades",
+    "decryption_failed": "Dekrypteringen misslyckades",
+    "wrong_password": "Felaktigt lösenord",
+    "encrypt_dialog_title": "Kryptera möte",
+    "encrypt_dialog_description": "Ange ett lösenord för att kryptera detta möte",
+    "decrypt_dialog_title": "Dekryptera möte",
+    "decrypt_dialog_description": "Ange lösenordet för att låsa upp detta möte"
+  },
+  "export": {
+    "title": "Exportera möte",
+    "choose_format": "Välj exportformat",
+    "formats": {
+      "docx": {
+        "label": "Word-dokument",
+        "description": "Fullständig transkription med talarformatering"
+      },
+      "pdf": {
+        "label": "PDF",
+        "description": "Fullständig transkription med formatering"
+      },
+      "txt": {
+        "label": "Vanlig text",
+        "description": "Enkelt textformat för enkel delning"
+      },
+      "srt": {
+        "label": "Undertextfil",
+        "description": "SRT-format för videospelare"
+      },
+      "vtt": {
+        "label": "WebVTT-undertext",
+        "description": "VTT-format för webvideo"
+      },
+      "json": {
+        "label": "JSON-format",
+        "description": "Strukturerade data med segment och talare"
+      },
+      "csv": {
+        "label": "CSV-kalkyl",
+        "description": "Segment med tidsstämplar och talare"
+      },
+      "markdown": {
+        "label": "Markdown",
+        "description": "Formaterad text med talarnamn"
+      },
+      "docx_summary": {
+        "label": "Word med sammanfattning",
+        "description": "Transkription plus genererad sammanfattning"
+      },
+      "pdf_summary": {
+        "label": "PDF med sammanfattning",
+        "description": "Transkription plus genererad sammanfattning"
+      },
+      "docx_actions": {
+        "label": "Word med åtgärder",
+        "description": "Transkription med identifierade åtgärdspunkter"
+      },
+      "pdf_actions": {
+        "label": "PDF med åtgärder",
+        "description": "Transkription med identifierade åtgärdspunkter"
+      },
+      "docx_protocol": {
+        "label": "Word-protokoll",
+        "description": "Format för formellt mötesprotokoll"
+      },
+      "pdf_protocol": {
+        "label": "PDF-protokoll",
+        "description": "Format för formellt mötesprotokoll"
+      }
+    }
+  },
+  "settings": {
+    "title": "Inställningar",
+    "models": "Modeller",
+    "preferences": "Inställningar",
+    "api_keys": "API-nycklar",
+    "speaker_profiles": "Talarprofiler",
+    "vocabulary": "Ordförråd",
+    "language": "Språk",
+    "tasks": {
+      "actions": {
+        "label": "Åtgärder",
+        "description": "Anpassade åtgärder på transkriptioner"
+      },
+      "analysis": {
+        "label": "Analys",
+        "description": "Intro-detektering, talar-ID, slutförande"
+      },
+      "live": {
+        "label": "Live-polering",
+        "description": "Talarnamn under livesessioner"
+      },
+      "transcription": {
+        "label": "Transkribering",
+        "description": "Whisper-modell för batchbearbetning"
+      },
+      "live_transcription": {
+        "label": "Live-transkribering",
+        "description": "Whisper-modell för livesessioner"
+      }
+    },
+    "speaker_profiles_enabled": "Aktivera talarprofiler",
+    "default_vocabulary": "Standardordförråd",
+    "hf_token": "Hugging Face-token",
+    "openrouter_key": "OpenRouter API-nyckel",
+    "delete_profile": "Radera talarprofil",
+    "delete_profile_confirm": "Radera talarprofilen \"%s\"? Detta kan inte ångras."
+  },
+  "speakers": {
+    "speakers": "Talare",
+    "speaker": "Talare",
+    "unknown": "Okänd talare",
+    "identify": "Identifiera",
+    "merge": "Sammanfoga",
+    "speaking_time": "Taltid",
+    "segments": "segment",
+    "profile": "Röstprofil",
+    "use_profile": "Använd talarprofil",
+    "disable_profile": "Inaktivera profil"
+  },
+  "insights": {
+    "insights": "Insikter",
+    "summary": "Sammanfattning",
+    "actions": "Åtgärdspunkter",
+    "decisions": "Beslut",
+    "questions": "Olösta frågor",
+    "extract": "Extrahera insikter",
+    "analyze_again": "Analysera igen",
+    "analyzing": "Analyserar...",
+    "empty_state": "Klicka på \"%action%\" för att analysera mötet med AI.",
+    "generate": "Generera",
+    "generating": "Genererar...",
+    "view_results": "Visa resultat"
+  },
+  "actions": {
+    "actions": "Åtgärder",
+    "custom_actions": "Anpassade åtgärder på transkriptioner",
+    "run": "Kör",
+    "running": "Körs...",
+    "results": "Resultat",
+    "result": "Resultat",
+    "status": {
+      "pending": "Väntande",
+      "running": "Körs",
+      "completed": "Slutfört",
+      "failed": "Misslyckades"
+    },
+    "view": "Visa",
+    "delete": "Radera",
+    "show_results": "Visa åtgärdsresultat"
+  },
+  "polish": {
+    "no_segments": "inga segment",
+    "failed_prefix": "Polish-pass misslyckades"
+  },
+  "audio": {
+    "microphone": "Mikrofon",
+    "system_audio": "Systemljud",
+    "select_audio_source": "Välj ljudkälla",
+    "stop": "Stopp",
+    "start": "Starta",
+    "pause": "Pausa",
+    "resume": "Fortsätt",
+    "recording": "Spelar in",
+    "speed": "Hastighet",
+    "volume": "Volym"
+  },
+  "progress": {
+    "processing": "Bearbetar...",
+    "transcription": "Transkribering",
+    "audio": "Ljud",
+    "ai_analysis": "AI-analys",
+    "diarization": "Diarisering",
+    "alignment": "Justering",
+    "identification": "Identifiering",
+    "polish": "Polering",
+    "finalize": "Slutför",
+    "step": "Steg %d av %d",
+    "percent": "%d%%",
+    "extracting_audio": "Extraherar ljud...",
+    "audio_extracted": "Ljud extraherat",
+    "calculating_audio_duration": "Beräknar ljudlängd...",
+    "transcribing_whisper": "Transkriberar med Whisper...",
+    "transcribing_high_quality_model": "Transkriberar med högkvalitetsmodell...",
+    "transcription_complete": "Transkribering klar",
+    "analyzing_intro_ai": "Analyserar presentationsfas med AI...",
+    "found_participants_prefix": "Hittade deltagare:",
+    "found_participants_intro_end_prefix": "intro slutade vid",
+    "rerunning_diarization": "Kör ny talaridentifiering...",
+    "identifying_speakers_diarization": "Identifierar talare (diarisering)...",
+    "full_speaker_identification": "Fullständig talaridentifiering...",
+    "diarization_complete": "Diarisering klar",
+    "aligning_speakers_text": "Synkroniserar talare med text...",
+    "alignment_complete": "Synkronisering klar",
+    "identifying_speakers": "Identifierar talare...",
+    "reidentifying_speakers_ai": "Identifierar talare med AI...",
+    "analyzing_presentations_ai": "Analyserar presentationer med AI...",
+    "matching_saved_voice_profiles": "Matchar mot sparade röstprofiler...",
+    "saving_results": "Sparar resultat...",
+    "saving_final_results": "Sparar slutgiltigt resultat...",
+    "finalizing_high_quality_message": "Slutför transkribering med högkvalitetsmodell...",
+    "done": "Klar!"
+  },
+  "analytics": {
+    "speaker_analytics": "Talaranalys",
+    "talaranalys": "Talaranalys",
+    "total_speakers": "Totalt talare",
+    "total_time": "Total tid",
+    "average_speed": "Genomsnittlig hastighet",
+    "words_per_minute": "ord/minut"
+  },
+  "diarization": {
+    "mlx_ignores_speaker_constraints": "MLX-diariseringsbackend ignorerar begränsningarna min_speakers/max_speakers"
+  },
+  "protocol": {
+    "generate_protocol": "Generera protokoll",
+    "protocol": "Protokoll",
+    "generating": "Genererar protokoll...",
+    "title": "Formellt mötesprotokoll",
+    "description": "Ett formellt mötesprotokoll för möten i offentlig sektor",
+    "dialog_description": "AI analyserar transkriberingen och skapar ett formellt protokoll med närvarande, dagordning, beslutspunkter och paragrafnumrering.",
+    "generating_hint": "Detta kan ta upp till en minut",
+    "preview": "Förhandsgranska",
+    "regenerate": "Generera om",
+    "copy": "Kopiera",
+    "download_docx": "Ladda ner DOCX",
+    "exporting": "Exporterar...",
+    "generate_failed": "Kunde inte generera protokoll",
+    "export_failed": "Kunde inte exportera DOCX",
+    "download_file_prefix": "Protokoll"
+  },
+  "transcript": {
+    "transcript": "Transkription",
+    "edit": "Redigera",
+    "save_changes": "Spara ändringar",
+    "discard": "Kassera",
+    "edited": "Redigerad",
+    "jump_to": "Hoppa till",
+    "timestamp": "Tidsstämpel",
+    "word_count": "Ordantal",
+    "truncated": "transkribering trunkerad"
+  },
+  "errors": {
+    "something_went_wrong": "Något gick fel",
+    "please_try_again": "Försök igen",
+    "failed": "Misslyckades",
+    "retry": "Försök igen",
+    "network_error": "Nätverksfel",
+    "server_error": "Serverfel",
+    "action_not_found": "Åtgärd hittades inte",
+    "action_result_has_no_content": "Åtgärdsresultatet har inget innehåll",
+    "action_result_not_found": "Åtgärdsresultat hittades inte",
+    "failed_to_queue_task": "Kunde inte köa uppgift: %error%",
+    "meeting_already_encrypted": "Mötet är redan krypterat",
+    "meeting_not_encrypted": "Mötet är inte krypterat",
+    "meeting_not_completed": "Mötet måste slutföras först",
+    "meeting_not_found": "Möte hittades inte",
+    "password_required": "Lösenord är obligatoriskt",
+    "result_not_found": "Resultat hittades inte",
+    "task_queue_unavailable": "Jobbkö ej tillgänglig: %error%",
+    "unknown_format": "Okänt format: %format%",
+    "wrong_password": "Fel lösenord",
+    "insight_not_found": "Insikt hittades inte",
+    "invalid_status": "Ogiltig status: %status%",
+    "no_transcript_segments": "Inga transkriptionsegment hittades",
+    "no_protocol_text": "Ingen protokolltext tillhandahållen",
+    "title_required": "Titel är obligatorisk",
+    "unsupported_file_type": "Filtyp '%ext%' stöds inte. Tillåtna: %extensions%",
+    "min_speakers_invalid": "min_speakers måste vara minst 1",
+    "max_speakers_invalid": "max_speakers måste vara minst 1",
+    "min_max_speakers_order": "min_speakers kan inte vara större än max_speakers",
+    "already_processing": "Bearbetar redan",
+    "meeting_already_processing": "Mötet bearbetas redan",
+    "no_transcription_data": "Ingen transkriptionsdata. Kör fullständig bearbetning först.",
+    "no_transcription_diarization_data": "Ingen transkriptions-/diarisationsdata. Kör fullständig bearbetning först.",
+    "file_too_large": "Filen är för stor. Maximal storlek är %max_gb% GB",
+    "segment_not_found": "Segment hittades inte",
+    "cannot_edit_encrypted_meeting": "Kan inte redigera segment medan mötet är krypterat. Dekryptera först.",
+    "profile_not_found": "Profil hittades inte",
+    "speaker_not_found": "Talare hittades inte",
+    "meeting_or_audio_not_found": "Möte eller ljud hittades inte",
+    "speaker_no_segments": "Talare har inga segment",
+    "no_valid_audio_segments": "Inga giltiga ljudsegment för denna talare",
+    "speakers_same_meeting": "Talare måste vara från samma möte",
+    "entry_not_found": "Post hittades inte",
+    "meeting_or_job_not_found": "Möte eller jobb hittades inte",
+    "task_time_limit_exceeded": "Uppgiften överskred tidsgränsen (55 minuter). Försök med en kortare inspelning."
+  },
+  "live": {
+    "live_recording": "Liveinspelning",
+    "stop_recording": "Stoppa inspelningen",
+    "finalizing_recording": "Slutför inspelningen...",
+    "recording_complete": "Inspelningen slutförd",
+    "minutes": "minuter",
+    "websocket_meeting_not_found": "Möte hittades inte eller är inte i live-läge",
+    "websocket_finalizing": "Slutför transkribering..."
+  },
+  "prompts": {
+    "summary": "Du är en mötesassistent. Skriv en tydlig och koncis sammanfattning av mötet. Inkludera: huvudämnen som diskuterades, viktiga beslut som fattades, och eventuella olösta frågor. Skriv på svenska.",
+    "todo": "Du är en mötesassistent. Skapa en strukturerad åtgärdslista från mötet. För varje åtgärd, ange:\n- Vad som ska göras\n- Vem som är ansvarig (om det framgår)\n- Deadline (om det nämns)\n\nFormatera som en numrerad lista. Skriv på svenska.",
+    "deidentified": "Du är en integritetsspecialist. Skriv om transkriberingen så att alla personnamn ersatts med 'Person A', 'Person B', 'Person C' osv. Ersätt även organisationsnamn, platser och andra identifierande detaljer med generiska termer. Behåll innehållet intakt. Skriv på svenska.",
+    "protocol": "Du är en professionell protokollforsare för svensk offentlig sektor. Skapa ett formellt mötesprotokoll baserat på transkriberingen nedan.\n\nProtokollet ska följa svensk standard för offentlig sektor med följande struktur:\n\n1. **Rubrik** - Protokoll från [typ av möte]\n2. **Datum och tid** - Om det framgår, annars använd det du vet\n3. **Närvarande** - Lista alla deltagare (använd namnen från transkriberingen)\n4. **Dagordning** - Identifiera dagordningspunkter från vad som diskuterades\n5. **Paragrafpunkter** - Numrerade paragrafer (§1, §2, etc.) med:\n   - Rubrik för varje punkt\n   - Kort sammanfattning av diskussionen\n   - Eventuella BESLUT markerade tydligt\n   - Eventuella ÅTGÄRDSPUNKTER med ansvarig person\n6. **Justering** - Plats för underskrifter\n\nSkriv på korrekt svenska. Var koncis men fullständig. Markera beslut med 'BESLUT:' och åtgärdspunkter med 'ÅTGÄRD:'. Svara med ren text (inte JSON), formaterad med markdown.",
+    "intro_analysis": "Analysera denna transkribering från början av ett möte. Identifiera vilka personer som presenterar sig och koppla deras namn till deras talaretiketter.\n\nTranskribering:\n%intro_text%\n\nSvara ENBART med en JSON-array i detta format:\n[\n  {\"speaker_label\": \"SPEAKER_00\", \"name\": \"Förnamn Efternamn\"},\n  {\"speaker_label\": \"SPEAKER_01\", \"name\": \"Förnamn Efternamn\"}\n]\n\nOm du inte kan identifiera några namn, svara med en tom array: []\nSvara ENBART med JSON, ingen annan text.",
+    "intro_iterative": "Du ar en motesanalytiker. Du far en transkribering av ett mote i omgangar (chunk for chunk). Din uppgift ar att identifiera presentationsfasen - den del dar deltagarna presenterar sig. For varje ny chunk, analysera om presentationerna fortfarande pagar eller om motet har gatt vidare till annat innehall.\n\nSvara ALLTID med JSON i exakt detta format:\n{\"intro_ongoing\": true/false, \"speaker_count\": <antal unika deltagare hittills>, \"names\": [\"namn1\", \"namn2\"], \"reasoning\": \"kort forklaring\"}",
+    "intro_iterative_chunk": "Chunk {chunk_number} (tid {start_time}s - {end_time}s):\n{chunk_text}\n\nPagar presentationsfasen fortfarande? Hur manga unika deltagare har du identifierat hittills?",
+    "speaker_name": "Du analyserar en transkribering från ett möte med %num_speakers% deltagare. Varje talare har en etikett (Talare 1, Talare 2, osv). Identifiera VARJE talares namn baserat på:\n- Presentationer: 'jag heter...', 'jag är...', 'mitt namn är...'\n- När andra tilltalar dem vid namn\n- Ledtrådar i vad de säger om sig själva\n\n%speaker_blocks%\n\nVIKTIGT:\n- Varje talare MÅSTE få ett UNIKT namn\n- Om du inte kan identifiera ett namn, använd 'Deltagare N' (t.ex. 'Deltagare 1', 'Deltagare 2')\n- Använd ALDRIG 'Talare N' som namn\n- Ge ALLA talare ett namn, inte bara några\n\nSvara ENBART med JSON:\n{\"speakers\": [{\"label\": \"Speaker 1\", \"name\": \"Förnamn\"}, {\"label\": \"Speaker 2\", \"name\": \"Förnamn\"}]}",
+    "insights_extraction": "Du är en mötesanalytiker. Analysera transkriberingen och extrahera:\n\n1. **Beslut** - Konkreta beslut som fattades under mötet\n2. **Åtgärdspunkter** - Uppgifter som någon ska utföra, med ansvarig person om det framgår\n3. **Öppna frågor** - Frågor som diskuterades men inte fick något svar eller beslut\n\nSvara ENBART med JSON i detta format:\n{\n  \"decisions\": [\n    {\"content\": \"Beskrivning av beslutet\", \"timestamp\": 123.4}\n  ],\n  \"action_items\": [\n    {\"content\": \"Vad som ska göras\", \"assignee\": \"Personnamn eller null\", \"timestamp\": 234.5}\n  ],\n  \"open_questions\": [\n    {\"content\": \"Fråga som är olöst\", \"timestamp\": 345.6}\n  ]\n}\n\nTidsstämplar (timestamp) ska vara i sekunder från start, matcha den närmaste tidsstämpeln i transkriberingen. Om du inte hittar några av en kategori, returnera en tom lista. Skriv på svenska. Svara ENBART med JSON."
+  },
+  "labels": {
+    "protocol_title": "Mötestitel",
+    "protocol_date": "Datum",
+    "protocol_duration": "Längd",
+    "protocol_participants": "Deltagare",
+    "protocol_transcript": "Transkribering"
+  },
+  "ui": {
+    "unknown_speaker": "Okänd",
+    "transcription_truncated": "transkribering trunkerad",
+    "action": "Åtgärd",
+    "summary": "Sammanfattning",
+    "todo": "Åtgärdslista",
+    "meeting": "Möte",
+    "deidentified_version": "Avidentifierad version",
+    "analyzing_chunk_progress": "Analyserar chunk {chunk_number}/{total_chunks} ({end_time}s)...",
+    "intro_speaker_prefix": "Talare",
+    "duration_minutes": "minuter",
+    "deleted_action": "Borttagen åtgärd"
+  }
+}

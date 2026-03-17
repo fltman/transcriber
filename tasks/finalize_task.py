@@ -13,6 +13,7 @@ from services.diarization_service import DiarizationService
 from services.speaker_id_service import SpeakerIdService
 from config import get_meeting_path
 from model_config import get_model_config
+from translations import get_translation
 
 
 @celery_app.task(bind=True)
@@ -29,7 +30,7 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
         job = db.query(Job).filter(Job.id == job_id).first()
 
         if not meeting or not job:
-            return {"error": "Meeting or Job not found"}
+            return {"error": get_translation("errors.meeting_or_job_not_found")}
 
         job.status = JobStatus.RUNNING
         job.started_at = datetime.utcnow()
@@ -39,7 +40,7 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
 
         publish_event(meeting_id, {
             "type": "finalize_started",
-            "message": "Finalizing transcription with high-quality model...",
+            "message": get_translation("progress.finalizing_high_quality_message"),
         })
 
         meeting_path = get_meeting_path(meeting_id)
@@ -53,24 +54,24 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
         speaker_id_service = SpeakerIdService(llm_preset=analysis_preset)
 
         # Get duration
-        update_progress(db, job, meeting, 5, "Beräknar ljudlängd...")
+        update_progress(db, job, meeting, 5, get_translation("progress.calculating_audio_duration"))
         duration = audio_service.get_duration(audio_path)
         meeting.duration = duration
         db.commit()
 
         # Step 1: Re-transcribe with medium (high-quality) model
-        update_progress(db, job, meeting, 10, "Transkriberar med högkvalitetsmodell...")
+        update_progress(db, job, meeting, 10, get_translation("progress.transcribing_high_quality_model"))
         whisper_segments = whisper_service.transcribe(audio_path, vocabulary=meeting.vocabulary)
         meeting.raw_transcription = whisper_segments
         db.commit()
-        update_progress(db, job, meeting, 40, "Transkribering klar")
+        update_progress(db, job, meeting, 40, get_translation("progress.transcription_complete"))
 
         # Step 2: LLM intro analysis
         min_speakers = meeting.min_speakers
         max_speakers = meeting.max_speakers
 
         if not min_speakers:
-            update_progress(db, job, meeting, 42, "Analyserar presentationsfas med AI...")
+            update_progress(db, job, meeting, 42, get_translation("progress.analyzing_intro_ai"))
             from services.llm_service import LLMService
             llm = LLMService(preset=analysis_preset)
 
@@ -81,7 +82,7 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
                 meeting.intro_end_time = intro_result["intro_end_time"]
 
         # Step 3: Full diarization
-        update_progress(db, job, meeting, 50, "Fullständig talaridentifiering...")
+        update_progress(db, job, meeting, 50, get_translation("progress.full_speaker_identification"))
         diarization_segments = diarization_service.diarize(
             audio_path,
             min_speakers=min_speakers,
@@ -89,14 +90,14 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
         )
         meeting.raw_diarization = diarization_segments
         db.commit()
-        update_progress(db, job, meeting, 70, "Diarization klar")
+        update_progress(db, job, meeting, 70, get_translation("progress.diarization_complete"))
 
         # Step 4: Alignment
-        update_progress(db, job, meeting, 72, "Synkroniserar talare med text...")
+        update_progress(db, job, meeting, 72, get_translation("progress.aligning_speakers_text"))
         aligned = align_segments(whisper_segments, diarization_segments)
 
         # Step 5: Speaker identification
-        update_progress(db, job, meeting, 80, "Identifierar talare...")
+        update_progress(db, job, meeting, 80, get_translation("progress.identifying_speakers"))
         speaker_labels = list(set(s["speaker"] for s in aligned if s["speaker"] != "UNKNOWN"))
         speaker_info = {}
 
@@ -109,12 +110,13 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
         if unidentified:
             fallback = speaker_id_service.identify_speakers_model3(unidentified)
             offset = len(speaker_info)
+            participant = get_translation('common.participant')
             for i, (label, info) in enumerate(fallback.items()):
                 if offset > 0:
-                    info["name"] = f"Deltagare {offset + i + 1}"
+                    info["name"] = f"{participant} {offset + i + 1}"
                 speaker_info[label] = info
 
-        update_progress(db, job, meeting, 90, "Sparar slutgiltigt resultat...")
+        update_progress(db, job, meeting, 90, get_translation("progress.saving_final_results"))
 
         # Step 6: Collect edited segments before cleanup
         existing_segments = (
@@ -153,7 +155,7 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
             unk = Speaker(
                 meeting_id=meeting_id,
                 label="UNKNOWN",
-                display_name="Okand",
+                display_name=get_translation("common.unknown_speaker"),
                 color="#9ca3af",
             )
             db.add(unk)
@@ -198,14 +200,14 @@ def finalize_live_task(self, meeting_id: str, job_id: str):
         meeting.recording_status = RecordingStatus.COMPLETE.value
         job.status = JobStatus.COMPLETED
         job.progress = 100
-        job.current_step = "Klar!"
+        job.current_step = get_translation("progress.done")
         job.completed_at = datetime.utcnow()
         db.commit()
 
         publish_event(meeting_id, {
             "type": "finalize_complete",
             "progress": 100,
-            "step": "Klar!",
+            "step": get_translation("progress.done"),
         })
 
         return {"status": "completed", "meeting_id": meeting_id}

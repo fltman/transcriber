@@ -15,6 +15,7 @@ from models.meeting import MeetingMode, RecordingStatus
 from models.job import Job, JobType, JobStatus
 from config import get_meeting_path
 from tasks.process_meeting import process_meeting_task
+from translations import get_translation
 
 router = APIRouter(prefix="/api/meetings", tags=["meetings"])
 
@@ -62,7 +63,7 @@ async def create_meeting(
     # Validate title
     title = title.strip()[:MAX_TITLE_LENGTH]
     if not title:
-        raise HTTPException(400, "Title is required")
+        raise HTTPException(400, get_translation('errors.title_required'))
 
     # Validate file extension
     filename = file.filename or "upload.mp4"
@@ -70,7 +71,7 @@ async def create_meeting(
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             400,
-            f"Unsupported file type '{ext}'. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+            get_translation('errors.unsupported_file_type').format(ext=ext, extensions=', '.join(sorted(ALLOWED_EXTENSIONS))),
         )
 
     # Sanitize filename — strip path components and special characters
@@ -78,11 +79,11 @@ async def create_meeting(
 
     # Validate speaker counts
     if min_speakers is not None and min_speakers < 1:
-        raise HTTPException(400, "min_speakers must be at least 1")
+        raise HTTPException(400, get_translation('errors.min_speakers_invalid'))
     if max_speakers is not None and max_speakers < 1:
-        raise HTTPException(400, "max_speakers must be at least 1")
+        raise HTTPException(400, get_translation('errors.max_speakers_invalid'))
     if min_speakers and max_speakers and min_speakers > max_speakers:
-        raise HTTPException(400, "min_speakers cannot exceed max_speakers")
+        raise HTTPException(400, get_translation('errors.min_max_speakers_order'))
 
     # Use global default vocabulary if none provided
     from preferences import load_preferences
@@ -118,7 +119,7 @@ async def create_meeting(
                 Path(upload_path).unlink(missing_ok=True)
                 shutil.rmtree(meeting_dir, ignore_errors=True)
                 db.rollback()
-                raise HTTPException(413, f"File too large. Maximum size is {MAX_UPLOAD_SIZE // (1024**3)} GB")
+                raise HTTPException(413, get_translation('errors.file_too_large').format(max_gb=MAX_UPLOAD_SIZE // (1024**3)))
             f.write(chunk)
 
     meeting.audio_filepath = upload_path
@@ -131,7 +132,7 @@ async def create_meeting(
 def get_meeting(meeting_id: str, db: Session = Depends(get_db)):
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
     return meeting.to_dict(include_segments=True)
 
 
@@ -139,7 +140,7 @@ def get_meeting(meeting_id: str, db: Session = Depends(get_db)):
 def delete_meeting(meeting_id: str, db: Session = Depends(get_db)):
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
 
     # Clean up files
     meeting_dir = get_meeting_path(meeting_id)
@@ -157,10 +158,10 @@ def start_processing(meeting_id: str, db: Session = Depends(get_db)):
 
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
 
     if meeting.status == MeetingStatus.PROCESSING:
-        raise HTTPException(400, "Already processing")
+        raise HTTPException(400, get_translation('errors.already_processing'))
 
     # Atomic status transition to prevent duplicate processing
     rows = db.execute(
@@ -171,7 +172,7 @@ def start_processing(meeting_id: str, db: Session = Depends(get_db)):
     )
     if rows.rowcount == 0:
         db.rollback()
-        raise HTTPException(409, "Meeting is already being processed")
+        raise HTTPException(409, get_translation('errors.meeting_already_processing'))
 
     # Create job
     job = Job(
@@ -230,11 +231,11 @@ def rediarize_meeting(meeting_id: str, db: Session = Depends(get_db)):
 
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
-    if meeting.status == MeetingStatus.PROCESSING:
-        raise HTTPException(400, "Already processing")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
+    if meeting.status != MeetingStatus.UPLOADED:
+        raise HTTPException(400, get_translation('errors.already_processing'))
     if not meeting.raw_transcription:
-        raise HTTPException(400, "No transcription data. Run full processing first.")
+        raise HTTPException(400, get_translation('errors.no_transcription_data'))
 
     rows = db.execute(
         sql_update(Meeting)
@@ -244,7 +245,7 @@ def rediarize_meeting(meeting_id: str, db: Session = Depends(get_db)):
     )
     if rows.rowcount == 0:
         db.rollback()
-        raise HTTPException(409, "Meeting is already being processed")
+        raise HTTPException(409, get_translation('errors.meeting_already_processing'))
 
     job = Job(
         meeting_id=meeting.id,
@@ -268,11 +269,11 @@ def reidentify_meeting(meeting_id: str, db: Session = Depends(get_db)):
 
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
     if meeting.status == MeetingStatus.PROCESSING:
-        raise HTTPException(400, "Already processing")
+        raise HTTPException(400, get_translation('errors.already_processing'))
     if not meeting.raw_transcription or not meeting.raw_diarization:
-        raise HTTPException(400, "No transcription/diarization data. Run full processing first.")
+        raise HTTPException(400, get_translation('errors.no_transcription_diarization_data'))
 
     rows = db.execute(
         sql_update(Meeting)
@@ -282,7 +283,7 @@ def reidentify_meeting(meeting_id: str, db: Session = Depends(get_db)):
     )
     if rows.rowcount == 0:
         db.rollback()
-        raise HTTPException(409, "Meeting is already being processed")
+        raise HTTPException(409, get_translation('errors.meeting_already_processing'))
 
     job = Job(
         meeting_id=meeting.id,

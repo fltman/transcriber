@@ -1,0 +1,7 @@
+{
+    "id": "mlx-qwen3-instruct",
+    "name": "Qwen3 4B Instruct 2507",
+    "type": "llm",
+    "provider": "openrouter",
+    "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+}

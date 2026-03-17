@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { Meeting, Segment, Speaker, ProgressUpdate } from "./types";
 
+type Language = "en" | "sv";
+
 interface AppState {
   meetings: Meeting[];
   setMeetings: (m: Meeting[]) => void;
@@ -32,6 +34,9 @@ interface AppState {
 
   selectedAudioDevice: string;
   setSelectedAudioDevice: (d: string) => void;
+
+  language: Language;
+  setLanguage: (l: Language) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -77,4 +82,7 @@ export const useStore = create<AppState>((set) => ({
 
   selectedAudioDevice: "default",
   setSelectedAudioDevice: (selectedAudioDevice) => set({ selectedAudioDevice }),
+
+  language: "en",
+  setLanguage: (language) => set({ language }),
 }));

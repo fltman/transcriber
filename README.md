@@ -12,7 +12,7 @@ AI-powered local meeting transcription with automatic speaker identification. Up
 1. **Upload, record, or go live** through the web UI
 2. **Audio extraction** - FFmpeg converts to 16kHz mono WAV
 3. **Transcription** - whisper.cpp with KB-LAB Swedish models (Metal GPU accelerated)
-4. **Speaker diarization** - pyannote.audio 3.1 separates speakers
+4. **Speaker diarization** - pyannote.audio 3.1 on torch, or MLX sortformer on Apple Silicon
 5. **Intro analysis** - LLM iteratively reads the transcript to detect introductions and count speakers
 6. **Speaker identification** - Names matched to voices using LLM reasoning + SpeechBrain voice embeddings
 7. **Results** - Color-coded transcript synced with audio playback, editable segments, AI-powered actions, export to 7 formats
@@ -50,7 +50,7 @@ The instructions below are for **macOS with Apple Silicon**. For other platforms
 - **FFmpeg** (`brew install ffmpeg`)
 - **whisper.cpp** compiled with Metal support
 - **Ollama** with a model like `qwen3:8b` (recommended), or an OpenRouter API key
-- **Hugging Face token** with access to `pyannote/speaker-diarization-3.1`
+- **Hugging Face token** with access to `pyannote/speaker-diarization-3.1` when using the `torch` diarization backend
 
 ## Quick install
 
@@ -109,6 +109,32 @@ This starts:
 - PostgreSQL on port **5433**
 - Redis on port **6380**
 
+### Docker networking gotchas (important)
+
+When mixing host-native services with Docker containers, two rules prevent most connection issues:
+
+1. A service that should be reachable from outside its own network namespace must listen on `0.0.0.0`.
+2. A container cannot use `localhost` to reach services running on your host machine.
+
+Examples:
+
+- If you run a server inside Docker and want to access it from your Mac browser, ensure the process binds to `0.0.0.0` inside the container (not `127.0.0.1`).
+- If a container needs to call a host service (for example Ollama running on macOS), use `host.docker.internal` from inside the container.
+
+Use this in containerized configs:
+
+```env
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+```
+
+And ensure the host service is actually listening on an external interface (typically `0.0.0.0`) rather than only `127.0.0.1`.
+
+Quick reference:
+
+- Host -> Container (published port): `http://localhost:<published-port>`
+- Container -> Host service: `http://host.docker.internal:<port>`
+- Inside one container, `localhost` means that same container only
+
 ### 5. Create the .env file
 
 ```bash
@@ -131,14 +157,22 @@ WHISPER_CLI_PATH=../whisper.cpp/build/bin/whisper-cli
 WHISPER_MODEL_PATH=./models/kb_whisper_ggml_medium.bin
 WHISPER_SMALL_MODEL_PATH=./models/kb_whisper_ggml_small.bin
 
+# Shared ML backend switch (used by diarization and transcription): "torch" or "mlx"
+BACKEND=torch
+TORCH_DIARIZATION_MODEL=pyannote/speaker-diarization-3.1
+MLX_DIARIZATION_MODEL=mlx-community/diar_sortformer_4spk-v1-fp16
+
 STORAGE_PATH=./storage
 
-# Hugging Face token (needed for pyannote.audio speaker diarization)
+# Hugging Face token (needed only for the torch/pyannote diarization backend)
 # Get yours at https://huggingface.co/settings/tokens
 # You must accept the model terms at https://huggingface.co/pyannote/speaker-diarization-3.1
 HF_AUTH_TOKEN=hf_your_token_here
 EOF
 ```
+
+Set `BACKEND=mlx` to use MLX for diarization and transcription.
+Quick note: when using MLX, see the specific steps below for installing the python dependencies.
 
 Edit the file and fill in your actual paths and tokens.
 
@@ -148,6 +182,12 @@ Edit the file and fill in your actual paths and tokens.
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+```
+
+If you plan to run with `BACKEND=mlx`, install MLX-specific dependencies instead:
+
+```bash
+pip install -r requirements_mlx.txt
 ```
 
 ### 7. Set up the frontend

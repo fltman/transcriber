@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5174",
+    "dev": "vite --host ${LISTEN_HOST:-localhost} --port 5174",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },

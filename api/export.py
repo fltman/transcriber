@@ -8,10 +8,9 @@ from sqlalchemy.orm import Session, joinedload
 from database import get_db
 from models import Meeting, Segment
 from models.action import Action, ActionResult
+from translations import get_translation
 
 router = APIRouter(prefix="/api", tags=["export"])
-
-UNKNOWN_SPEAKER = "Okand"
 
 
 def _safe_filename(name: str) -> str:
@@ -54,7 +53,7 @@ def export_meeting(
 ):
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
 
     segments = (
         db.query(Segment)
@@ -79,13 +78,13 @@ def export_meeting(
     elif format == "pdf":
         return _export_pdf(meeting, segments)
     else:
-        raise HTTPException(400, f"Unknown format: {format}")
+        raise HTTPException(400, get_translation('errors.unknown_format').format(format=format))
 
 
 def _export_srt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     lines = []
     for i, seg in enumerate(segments, 1):
-        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
+        speaker = seg.speaker.display_name if seg.speaker else get_translation('common.unknown_speaker')
         lines.append(str(i))
         lines.append(f"{format_srt_time(seg.start_time)} --> {format_srt_time(seg.end_time)}")
         lines.append(f"[{speaker}] {seg.text}")
@@ -103,7 +102,7 @@ def _export_srt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
 def _export_vtt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     lines = ["WEBVTT", ""]
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
+        speaker = seg.speaker.display_name if seg.speaker else get_translation('common.unknown_speaker')
         lines.append(f"{format_vtt_time(seg.start_time)} --> {format_vtt_time(seg.end_time)}")
         lines.append(f"<v {speaker}>{seg.text}")
         lines.append("")
@@ -121,7 +120,7 @@ def _export_txt(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
     lines = []
     current_speaker = None
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
+        speaker = seg.speaker.display_name if seg.speaker else get_translation('common.unknown_speaker')
         if speaker != current_speaker:
             if lines:
                 lines.append("")
@@ -148,7 +147,7 @@ def _export_json(meeting: Meeting, segments: list[Segment]) -> JSONResponse:
             {
                 "start": seg.start_time,
                 "end": seg.end_time,
-                "speaker": seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER,
+                "speaker": seg.speaker.display_name if seg.speaker else get_translation('common.unknown_speaker'),
                 "text": seg.text,
             }
             for seg in segments
@@ -170,7 +169,7 @@ def _export_md(meeting: Meeting, segments: list[Segment]) -> PlainTextResponse:
 
     current_speaker = None
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
+        speaker = seg.speaker.display_name if seg.speaker else get_translation('common.unknown_speaker')
         if speaker != current_speaker:
             lines.append("")
             ts = format_timestamp_short(seg.start_time)
@@ -204,7 +203,7 @@ def _export_docx(meeting: Meeting, segments: list[Segment]) -> StreamingResponse
 
     current_speaker = None
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
+        speaker = seg.speaker.display_name if seg.speaker else get_translation('common.unknown_speaker')
         if speaker != current_speaker:
             ts = format_timestamp_short(seg.start_time)
             doc.add_heading(f"{speaker} [{ts}]", level=3)
@@ -272,7 +271,7 @@ def _export_pdf(meeting: Meeting, segments: list[Segment]) -> StreamingResponse:
 
     current_speaker = None
     for seg in segments:
-        speaker = seg.speaker.display_name if seg.speaker else UNKNOWN_SPEAKER
+        speaker = seg.speaker.display_name if seg.speaker else get_translation('common.unknown_speaker')
         if speaker != current_speaker:
             ts = format_timestamp_short(seg.start_time)
             story.append(Paragraph(f"{speaker} [{ts}]", speaker_style))
@@ -306,15 +305,15 @@ def export_action_result(
 ):
     result = db.query(ActionResult).filter(ActionResult.id == result_id).first()
     if not result:
-        raise HTTPException(404, "Action result not found")
+        raise HTTPException(404, get_translation('errors.action_result_not_found'))
     if not result.result_text:
-        raise HTTPException(400, "Action result has no content")
+        raise HTTPException(400, get_translation('errors.action_result_has_no_content'))
 
     action = db.query(Action).filter(Action.id == result.action_id).first()
-    action_name = action.name if action else "Action"
+    action_name = action.name if action else get_translation('ui.action')
 
     meeting = db.query(Meeting).filter(Meeting.id == result.meeting_id).first()
-    meeting_title = meeting.title if meeting else "Meeting"
+    meeting_title = meeting.title if meeting else get_translation('ui.meeting')
 
     filename = _safe_filename(f"{meeting_title} - {action_name}")
 
@@ -324,7 +323,7 @@ def export_action_result(
             headers={"Content-Disposition": f'attachment; filename="{filename}.txt"'},
         )
     elif format == "md":
-        md_content = f"# {action_name}\n\n**Meeting:** {meeting_title}\n\n---\n\n{result.result_text}"
+        md_content = f"# {action_name}\n\n**{get_translation('ui.meeting')}:** {meeting_title}\n\n---\n\n{result.result_text}"
         return PlainTextResponse(
             md_content,
             headers={
@@ -337,7 +336,7 @@ def export_action_result(
     elif format == "pdf":
         return _export_action_pdf(result.result_text, action_name, meeting_title, filename)
     else:
-        raise HTTPException(400, f"Unknown format: {format}")
+        raise HTTPException(400, get_translation('errors.unknown_format').format(format=format))
 
 
 def _export_action_docx(text: str, action_name: str, meeting_title: str, filename: str) -> StreamingResponse:
@@ -347,7 +346,7 @@ def _export_action_docx(text: str, action_name: str, meeting_title: str, filenam
     doc = Document()
     doc.add_heading(action_name, level=1)
     p = doc.add_paragraph()
-    run = p.add_run(f"Meeting: {meeting_title}")
+    run = p.add_run(f"{get_translation('ui.meeting')}: {meeting_title}")
     run.font.size = Pt(10)
     run.font.color.rgb = RGBColor(128, 128, 128)
 
@@ -391,7 +390,7 @@ def _export_action_pdf(text: str, action_name: str, meeting_title: str, filename
 
     story = []
     story.append(Paragraph(action_name, title_style))
-    story.append(Paragraph(f"Meeting: {meeting_title}", meta_style))
+    story.append(Paragraph(f"{get_translation('ui.meeting')}: {meeting_title}", meta_style))
 
     for line in text.split("\n"):
         safe = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
