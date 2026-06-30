@@ -1,5 +1,7 @@
 # Transcriber
 
+[![Support me on Patreon](https://img.shields.io/badge/Patreon-Support%20my%20work-FF424D?style=flat&logo=patreon&logoColor=white)](https://www.patreon.com/AndersBjarby)
+
 AI-powered local meeting transcription with automatic speaker identification. Upload an audio file, record in the browser, or run a live session - and get a full transcript with speakers identified by name.
 
 ![Stack](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
