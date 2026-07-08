@@ -8,6 +8,7 @@ from models.job import JobStatus
 from services.diarization_service import DiarizationService
 from services.speaker_id_service import SpeakerIdService
 from model_config import get_model_config
+from translations import get_translation
 
 
 @celery_app.task(bind=True)
@@ -22,7 +23,7 @@ def rediarize_task(self, meeting_id: str, job_id: str):
         meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
         job = db.query(Job).filter(Job.id == job_id).first()
         if not meeting or not job:
-            return {"error": "Meeting or Job not found"}
+            return {"error": get_translation("errors.meeting_or_job_not_found")}
 
         job.status = JobStatus.RUNNING
         job.started_at = datetime.utcnow()
@@ -31,18 +32,18 @@ def rediarize_task(self, meeting_id: str, job_id: str):
 
         whisper_segments = meeting.raw_transcription
         if not whisper_segments:
-            raise RuntimeError("No existing transcription found. Run full processing first.")
+            raise RuntimeError(get_translation("errors.no_transcription_data"))
 
         audio_path = meeting.audio_filepath
         if not audio_path:
-            raise RuntimeError("No audio file found.")
+            raise RuntimeError(get_translation("errors.meeting_or_audio_not_found"))
 
         analysis_preset = get_model_config().get_model_for_task("analysis")
         diarization_service = DiarizationService()
         speaker_id_service = SpeakerIdService(llm_preset=analysis_preset)
 
         # Step 1: Fresh diarization
-        update_progress(db, job, meeting, 10, "Kör ny talaridentifiering...")
+        update_progress(db, job, meeting, 10, get_translation("progress.rerunning_diarization"))
         diarization_segments = diarization_service.diarize(
             audio_path,
             min_speakers=meeting.min_speakers,
@@ -50,14 +51,14 @@ def rediarize_task(self, meeting_id: str, job_id: str):
         )
         meeting.raw_diarization = diarization_segments
         db.commit()
-        update_progress(db, job, meeting, 50, "Diarization klar")
+        update_progress(db, job, meeting, 50, get_translation("progress.diarization_complete"))
 
         # Step 2: Re-align
-        update_progress(db, job, meeting, 55, "Synkroniserar talare med text...")
+        update_progress(db, job, meeting, 55, get_translation("progress.aligning_speakers_text"))
         aligned = align_segments(whisper_segments, diarization_segments)
 
         # Step 3: Speaker identification
-        update_progress(db, job, meeting, 65, "Identifierar talare...")
+        update_progress(db, job, meeting, 65, get_translation("progress.identifying_speakers"))
         speaker_labels = list(set(s["speaker"] for s in aligned if s["speaker"] != "UNKNOWN"))
         speaker_info = {}
 
@@ -70,22 +71,23 @@ def rediarize_task(self, meeting_id: str, job_id: str):
         if unidentified:
             fallback = speaker_id_service.identify_speakers_model3(unidentified)
             offset = len(speaker_info)
+            participant = get_translation('common.participant')
             for i, (label, info) in enumerate(fallback.items()):
                 if offset > 0:
-                    info["name"] = f"Deltagare {offset + i + 1}"
+                    info["name"] = f"{participant} {offset + i + 1}"
                 speaker_info[label] = info
 
         # Step 4: Collect edits, recreate speakers + segments
-        update_progress(db, job, meeting, 85, "Sparar resultat...")
+        update_progress(db, job, meeting, 85, get_translation("progress.saving_results"))
         _rebuild_speakers_and_segments(db, meeting, aligned, speaker_info, speaker_id_service)
 
         meeting.status = MeetingStatus.COMPLETED
         job.status = JobStatus.COMPLETED
         job.progress = 100
-        job.current_step = "Klar!"
+        job.current_step = get_translation("progress.done")
         job.completed_at = datetime.utcnow()
         db.commit()
-        update_progress(db, job, meeting, 100, "Klar!")
+        update_progress(db, job, meeting, 100, get_translation("progress.done"))
         return {"status": "completed", "meeting_id": meeting_id}
 
     except Exception as e:
@@ -108,7 +110,7 @@ def reidentify_task(self, meeting_id: str, job_id: str):
         meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
         job = db.query(Job).filter(Job.id == job_id).first()
         if not meeting or not job:
-            return {"error": "Meeting or Job not found"}
+            return {"error": get_translation("errors.meeting_or_job_not_found")}
 
         job.status = JobStatus.RUNNING
         job.started_at = datetime.utcnow()
@@ -118,21 +120,21 @@ def reidentify_task(self, meeting_id: str, job_id: str):
         whisper_segments = meeting.raw_transcription
         diarization_segments = meeting.raw_diarization
         if not whisper_segments or not diarization_segments:
-            raise RuntimeError("No existing transcription/diarization found. Run full processing first.")
+            raise RuntimeError(get_translation("errors.no_transcription_diarization_data"))
 
         audio_path = meeting.audio_filepath
         if not audio_path:
-            raise RuntimeError("No audio file found.")
+            raise RuntimeError(get_translation("errors.meeting_or_audio_not_found"))
 
         analysis_preset = get_model_config().get_model_for_task("analysis")
         speaker_id_service = SpeakerIdService(llm_preset=analysis_preset)
 
         # Step 1: Re-align (uses existing data)
-        update_progress(db, job, meeting, 20, "Synkroniserar talare med text...")
+        update_progress(db, job, meeting, 20, get_translation("progress.aligning_speakers_text"))
         aligned = align_segments(whisper_segments, diarization_segments)
 
         # Step 2: Re-identify speakers via LLM
-        update_progress(db, job, meeting, 40, "Identifierar talare med AI...")
+        update_progress(db, job, meeting, 40, get_translation("progress.reidentifying_speakers_ai"))
         speaker_labels = list(set(s["speaker"] for s in aligned if s["speaker"] != "UNKNOWN"))
         speaker_info = {}
 
@@ -145,22 +147,23 @@ def reidentify_task(self, meeting_id: str, job_id: str):
         if unidentified:
             fallback = speaker_id_service.identify_speakers_model3(unidentified)
             offset = len(speaker_info)
+            participant = get_translation('common.participant')
             for i, (label, info) in enumerate(fallback.items()):
                 if offset > 0:
-                    info["name"] = f"Deltagare {offset + i + 1}"
+                    info["name"] = f"{participant} {offset + i + 1}"
                 speaker_info[label] = info
 
         # Step 3: Rebuild
-        update_progress(db, job, meeting, 80, "Sparar resultat...")
+        update_progress(db, job, meeting, 80, get_translation("progress.saving_results"))
         _rebuild_speakers_and_segments(db, meeting, aligned, speaker_info, speaker_id_service)
 
         meeting.status = MeetingStatus.COMPLETED
         job.status = JobStatus.COMPLETED
         job.progress = 100
-        job.current_step = "Klar!"
+        job.current_step = get_translation("progress.done")
         job.completed_at = datetime.utcnow()
         db.commit()
-        update_progress(db, job, meeting, 100, "Klar!")
+        update_progress(db, job, meeting, 100, get_translation("progress.done"))
         return {"status": "completed", "meeting_id": meeting_id}
 
     except Exception as e:
@@ -208,7 +211,7 @@ def _rebuild_speakers_and_segments(db, meeting, aligned, speaker_info, speaker_i
         unk = Speaker(
             meeting_id=meeting.id,
             label="UNKNOWN",
-            display_name="Okand",
+            display_name=get_translation("common.unknown_speaker"),
             color="#9ca3af",
         )
         db.add(unk)

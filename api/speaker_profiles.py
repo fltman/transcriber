@@ -8,6 +8,7 @@ from models import Speaker, Segment
 from models.speaker_profile import SpeakerProfile
 from services.embedding_service import EmbeddingService
 from services.diarization_service import DiarizationService
+from translations import get_translation
 
 router = APIRouter(prefix="/api/speaker-profiles", tags=["speaker_profiles"])
 
@@ -38,7 +39,7 @@ def list_profiles(db: Session = Depends(get_db)):
 def get_profile(profile_id: str, db: Session = Depends(get_db)):
     profile = db.query(SpeakerProfile).filter(SpeakerProfile.id == profile_id).first()
     if not profile:
-        raise HTTPException(404, "Profile not found")
+        raise HTTPException(404, get_translation('errors.profile_not_found'))
     return profile.to_dict()
 
 
@@ -46,7 +47,7 @@ def get_profile(profile_id: str, db: Session = Depends(get_db)):
 def update_profile(profile_id: str, req: UpdateProfileRequest, db: Session = Depends(get_db)):
     profile = db.query(SpeakerProfile).filter(SpeakerProfile.id == profile_id).first()
     if not profile:
-        raise HTTPException(404, "Profile not found")
+        raise HTTPException(404, get_translation('errors.profile_not_found'))
     if req.name is not None:
         profile.name = req.name.strip()[:200]
     if req.notes is not None:
@@ -59,7 +60,7 @@ def update_profile(profile_id: str, req: UpdateProfileRequest, db: Session = Dep
 def delete_profile(profile_id: str, db: Session = Depends(get_db)):
     profile = db.query(SpeakerProfile).filter(SpeakerProfile.id == profile_id).first()
     if not profile:
-        raise HTTPException(404, "Profile not found")
+        raise HTTPException(404, get_translation('errors.profile_not_found'))
     db.delete(profile)
     db.commit()
     return {"ok": True}
@@ -80,11 +81,11 @@ def save_profile_from_speaker(req: SaveFromSpeakerRequest, db: Session = Depends
 
     speaker = db.query(Speaker).filter(Speaker.id == req.speaker_id).first()
     if not speaker:
-        raise HTTPException(404, "Speaker not found")
+        raise HTTPException(404, get_translation('errors.speaker_not_found'))
 
     meeting = db.query(Meeting).filter(Meeting.id == req.meeting_id).first()
     if not meeting or not meeting.audio_filepath:
-        raise HTTPException(404, "Meeting or audio not found")
+        raise HTTPException(404, get_translation('errors.meeting_or_audio_not_found'))
 
     # Get speaker's segments to extract audio
     segments = (
@@ -94,7 +95,7 @@ def save_profile_from_speaker(req: SaveFromSpeakerRequest, db: Session = Depends
         .all()
     )
     if not segments:
-        raise HTTPException(400, "Speaker has no segments")
+        raise HTTPException(400, get_translation('errors.speaker_no_segments'))
 
     # Extract representative audio clips (up to 30s total)
     embedding_service = EmbeddingService()
@@ -117,7 +118,7 @@ def save_profile_from_speaker(req: SaveFromSpeakerRequest, db: Session = Depends
         seg_count += 1
 
     if seg_count == 0:
-        raise HTTPException(400, "No valid audio segments for this speaker")
+        raise HTTPException(400, get_translation('errors.no_valid_audio_segments'))
 
     # Concatenate and extract
     if seg_count == 1:

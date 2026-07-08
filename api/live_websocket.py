@@ -18,6 +18,7 @@ from services.whisper_service import WhisperService
 from services.embedding_service import EmbeddingService
 from services.speaker_id_service import SPEAKER_COLORS
 from tasks.shared import publish_event
+from translations import get_translation
 
 router = APIRouter()
 
@@ -308,7 +309,7 @@ async def live_websocket(websocket: WebSocket, meeting_id: str):
     db = SessionLocal()
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting or meeting.mode != "live":
-        await websocket.close(code=4000, reason="Meeting not found or not in live mode")
+        await websocket.close(code=4000, reason=get_translation('live.websocket_meeting_not_found'))
         db.close()
         return
 
@@ -436,7 +437,7 @@ async def live_websocket(websocket: WebSocket, meeting_id: str):
                     _schedule_finalize(db, meeting_id)
                     await websocket.send_json({
                         "type": "finalize_started",
-                        "message": "Finalizing transcription...",
+                        "message": get_translation('live.websocket_finalizing'),
                     })
 
                 elif cmd.get("type") == "ping":

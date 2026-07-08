@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Markdown from "react-markdown";
 import { generateProtocol, exportProtocolDocx } from "../api";
+import { useTranslation } from "../hooks/useTranslation";
 
 interface Props {
   meetingId: string;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Props) {
+  const { t } = useTranslation();
   const [protocolText, setProtocolText] = useState("");
   const [generating, setGenerating] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -22,7 +24,7 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
       const result = await generateProtocol(meetingId);
       setProtocolText(result.protocol_text);
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "Kunde inte generera protokoll");
+      setError(e?.response?.data?.detail || t("protocol.generate_failed"));
     }
     setGenerating(false);
   }
@@ -34,11 +36,11 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Protokoll - ${meetingTitle}.docx`;
+      a.download = `${t("protocol.download_file_prefix")} - ${meetingTitle}.docx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {
-      setError("Kunde inte exportera DOCX");
+      setError(t("protocol.export_failed"));
     }
     setExporting(false);
   }
@@ -50,7 +52,7 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-white">Protokoll</h2>
+          <h2 className="text-xl font-bold text-white">{t("protocol.protocol")}</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-white transition">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -65,15 +67,15 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-slate-300 mb-2">Generera motesprotokoll</h3>
+            <h3 className="text-lg font-semibold text-slate-300 mb-2">{t("protocol.generate_protocol")}</h3>
             <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
-              AI analyserar transkriberingen och skapar ett formellt protokoll med narvarande, dagordning, beslutspunkter och paragrafnumrering.
+              {t("protocol.dialog_description")}
             </p>
             <button
               onClick={handleGenerate}
               className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-500 hover:to-indigo-500 transition-all shadow-lg shadow-violet-500/25"
             >
-              Generera protokoll
+              {t("protocol.generate_protocol")}
             </button>
           </div>
         )}
@@ -81,8 +83,8 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
         {generating && (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="w-10 h-10 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mb-4" />
-            <p className="text-slate-400 text-sm">Genererar protokoll med AI...</p>
-            <p className="text-slate-600 text-xs mt-1">Detta kan ta upp till en minut</p>
+            <p className="text-slate-400 text-sm">{t("protocol.generating")}</p>
+            <p className="text-slate-600 text-xs mt-1">{t("protocol.generating_hint")}</p>
           </div>
         )}
 
@@ -96,7 +98,7 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
                   !editing ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-white"
                 }`}
               >
-                Forhandsgranska
+                {t("protocol.preview")}
               </button>
               <button
                 onClick={() => setEditing(true)}
@@ -104,7 +106,7 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
                   editing ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-white"
                 }`}
               >
-                Redigera
+                {t("common.edit")}
               </button>
             </div>
 
@@ -127,7 +129,7 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
                 disabled={generating}
                 className="text-sm text-slate-500 hover:text-white transition"
               >
-                Generera om
+                {t("protocol.regenerate")}
               </button>
               <div className="flex gap-3">
                 <button
@@ -136,7 +138,7 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
                   }}
                   className="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition text-sm"
                 >
-                  Kopiera
+                  {t("protocol.copy")}
                 </button>
                 <button
                   onClick={handleExportDocx}
@@ -146,10 +148,10 @@ export default function ProtocolDialog({ meetingId, meetingTitle, onClose }: Pro
                   {exporting ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Exporterar...
+                      {t("protocol.exporting")}
                     </>
                   ) : (
-                    "Ladda ner DOCX"
+                    t("protocol.download_docx")
                   )}
                 </button>
               </div>

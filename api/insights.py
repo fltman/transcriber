@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Meeting, MeetingInsight, InsightStatus
 from models.job import Job, JobType, JobStatus
+from translations import get_translation
 
 router = APIRouter(prefix="/api", tags=["insights"])
 
@@ -34,9 +35,9 @@ def extract_insights(meeting_id: str, db: Session = Depends(get_db)):
 
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
-    if meeting.status.value != "completed":
-        raise HTTPException(400, "Meeting must be completed first")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
+    if meeting.status != "completed":
+        raise HTTPException(400, get_translation('errors.meeting_not_completed'))
 
     job = Job(
         meeting_id=meeting.id,
@@ -56,13 +57,13 @@ def extract_insights(meeting_id: str, db: Session = Depends(get_db)):
 def update_insight(insight_id: str, req: UpdateInsightRequest, db: Session = Depends(get_db)):
     insight = db.query(MeetingInsight).filter(MeetingInsight.id == insight_id).first()
     if not insight:
-        raise HTTPException(404, "Insight not found")
+        raise HTTPException(404, get_translation('errors.insight_not_found'))
 
     if req.status is not None:
         try:
             insight.status = InsightStatus(req.status)
         except ValueError:
-            raise HTTPException(400, f"Invalid status: {req.status}")
+            raise HTTPException(400, get_translation('errors.invalid_status').format(status=req.status))
     if req.content is not None:
         insight.content = req.content.strip()[:2000]
     if req.assignee is not None:
@@ -76,7 +77,7 @@ def update_insight(insight_id: str, req: UpdateInsightRequest, db: Session = Dep
 def delete_insight(insight_id: str, db: Session = Depends(get_db)):
     insight = db.query(MeetingInsight).filter(MeetingInsight.id == insight_id).first()
     if not insight:
-        raise HTTPException(404, "Insight not found")
+        raise HTTPException(404, get_translation('errors.insight_not_found'))
     db.delete(insight)
     db.commit()
     return {"ok": True}

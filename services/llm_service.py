@@ -6,6 +6,7 @@ import requests
 
 from config import settings
 from preferences import get_secret
+from translations import get_translation
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class LLMService:
 
     def _call_openrouter(self, messages: list[dict], max_tokens: int) -> str:
         headers = {
-            "Authorization": f"Bearer {get_secret('openrouter_api_key')}",
+            # "Authorization": f"Bearer {get_secret('openrouter_api_key')}",
             "Content-Type": "application/json",
         }
         payload = {
@@ -40,9 +41,10 @@ class LLMService:
             "max_tokens": max_tokens,
         }
         response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers, json=payload, timeout=30,
+            f"{settings.openrouter_base_url}chat/completions",
+            headers=headers, json=payload, timeout=60,
         )
+
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"].strip()
 
@@ -127,18 +129,7 @@ class LLMService:
         messages = [
             {
                 "role": "system",
-                "content": (
-                    "Du ar en motesanalytiker. Du far en transkribering av ett mote "
-                    "i omgangar (chunk for chunk). Din uppgift ar att identifiera "
-                    "presentationsfasen - den del dar deltagarna presenterar sig. "
-                    "For varje ny chunk, analysera om presentationerna fortfarande pagar "
-                    "eller om motet har gatt vidare till annat innehall.\n\n"
-                    "Svara ALLTID med JSON i exakt detta format:\n"
-                    '{"intro_ongoing": true/false, '
-                    '"speaker_count": <antal unika deltagare hittills>, '
-                    '"names": ["namn1", "namn2"], '
-                    '"reasoning": "kort forklaring"}'
-                ),
+                "content": get_translation('prompts.intro_iterative'),
             }
         ]
 
@@ -153,16 +144,22 @@ class LLMService:
 
             messages.append({
                 "role": "user",
-                "content": (
-                    f"Chunk {i + 1} (tid {chunk['start_time']:.0f}s - {chunk_end:.0f}s):\n"
-                    f"{chunk_text}\n\n"
-                    f"Pagar presentationsfasen fortfarande? "
-                    f"Hur manga unika deltagare har du identifierat hittills?"
+                "content": get_translation('prompts.intro_iterative_chunk').format(
+                    chunk_number=i + 1,
+                    start_time=f"{chunk['start_time']:.0f}",
+                    end_time=f"{chunk_end:.0f}",
+                    chunk_text=chunk_text,
                 ),
             })
 
             if on_progress:
-                on_progress(f"Analyserar chunk {i + 1}/{len(chunks)} ({chunk_end:.0f}s)...")
+                on_progress(
+                    get_translation('ui.analyzing_chunk_progress').format(
+                        chunk_number=i + 1,
+                        total_chunks=len(chunks),
+                        end_time=f"{chunk_end:.0f}",
+                    )
+                )
 
             try:
                 response_text = self._call(messages, max_tokens=500)
@@ -232,20 +229,7 @@ class LLMService:
         Send intro transcript (with speaker labels) to LLM to map names.
         Returns list of {speaker_label, name}.
         """
-        prompt = f"""Analysera denna transkribering fran borjan av ett mote.
-Identifiera vilka personer som presenterar sig och koppla deras namn till deras talaretiketter.
-
-Transkribering:
-{intro_text}
-
-Svara ENBART med en JSON-array i detta format:
-[
-  {{"speaker_label": "SPEAKER_00", "name": "Fornamn Efternamn"}},
-  {{"speaker_label": "SPEAKER_01", "name": "Fornamn Efternamn"}}
-]
-
-Om du inte kan identifiera nagra namn, svara med en tom array: []
-Svara ENBART med JSON, ingen annan text."""
+        prompt = get_translation('prompts.intro_analysis').format(intro_text=intro_text)
 
         try:
             content = self._call([{"role": "user", "content": prompt}])

@@ -7,6 +7,7 @@ from database import SessionLocal
 from models import Meeting, Speaker, Segment, Job
 from models.job import JobStatus
 from model_config import get_model_config
+from translations import get_translation
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ def polish_pass_task(self, meeting_id: str, job_id: str, pass_number: int):
         job = db.query(Job).filter(Job.id == job_id).first()
 
         if not meeting or not job:
-            return {"error": "Meeting or Job not found"}
+            return {"error": get_translation("errors.meeting_or_job_not_found")}
 
         job.status = JobStatus.RUNNING
         job.started_at = start_time
@@ -52,7 +53,11 @@ def polish_pass_task(self, meeting_id: str, job_id: str, pass_number: int):
             job.progress = 100
             job.completed_at = datetime.utcnow()
             db.commit()
-            return {"status": "completed", "pass_number": pass_number, "note": "no segments"}
+            return {
+                "status": "completed",
+                "pass_number": pass_number,
+                "note": get_translation("polish.no_segments"),
+            }
 
         # Count segments per speaker
         spk_segments: dict[str, list] = {}  # speaker_id -> [segment, ...]
@@ -140,24 +145,9 @@ def polish_pass_task(self, meeting_id: str, job_id: str, pass_number: int):
 
         speaker_names = {}
         if speaker_blocks:
-            prompt = (
-                "Du analyserar en transkribering fran ett mote med "
-                f"{len(speaker_blocks)} deltagare. "
-                "Varje talare har en etikett (Speaker 1, Speaker 2, osv). "
-                "Identifiera VARJE talares namn baserat pa:\n"
-                "- Presentationer: 'jag heter...', 'jag ar...', 'mitt namn ar...'\n"
-                "- Nar andra tilltalar dem vid namn\n"
-                "- Ledtradar i vad de sager om sig sjalva\n\n"
-                + "\n\n".join(speaker_blocks)
-                + "\n\nVIKTIGT:\n"
-                "- Varje talare MASTE fa ett UNIKT namn\n"
-                "- Om du inte kan identifiera ett namn, anvand 'Deltagare N' "
-                "(t.ex. 'Deltagare 1', 'Deltagare 2')\n"
-                "- Anvand ALDRIG 'Speaker N' som namn\n"
-                "- Ge ALLA talare ett namn, inte bara nagra\n\n"
-                "Svara ENBART med JSON:\n"
-                '{"speakers": [{"label": "Speaker 1", "name": "Fornamn"}, '
-                '{"label": "Speaker 2", "name": "Fornamn"}]}'
+            prompt = get_translation('prompts.speaker_name').format(
+                num_speakers=len(speaker_blocks),
+                speaker_blocks="\n\n".join(speaker_blocks)
             )
 
             try:
@@ -239,7 +229,13 @@ def polish_pass_task(self, meeting_id: str, job_id: str, pass_number: int):
             pass
 
         try:
-            publish_event(meeting_id, {"type": "error", "error": f"Polish pass failed: {e}"})
+            publish_event(
+                meeting_id,
+                {
+                    "type": "error",
+                    "error": get_translation("polish.failed_prefix") + f": {e}",
+                },
+            )
         except Exception:
             pass
 

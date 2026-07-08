@@ -9,6 +9,7 @@ from models.meeting import Meeting
 from models.segment import Segment
 from models.action import ActionResult
 from services.encryption_service import EncryptionService
+from translations import get_translation
 
 router = APIRouter(prefix="/api/meetings", tags=["encryption"])
 
@@ -26,11 +27,11 @@ class DecryptRequest(BaseModel):
 def encrypt_meeting(meeting_id: str, req: EncryptRequest, db: Session = Depends(get_db)):
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
     if meeting.is_encrypted:
-        raise HTTPException(400, "Meeting is already encrypted")
+        raise HTTPException(400, get_translation('errors.meeting_already_encrypted'))
     if not req.password:
-        raise HTTPException(400, "Password is required")
+        raise HTTPException(400, get_translation('errors.password_required'))
 
     svc = EncryptionService
     salt = svc.generate_salt()
@@ -66,13 +67,13 @@ def encrypt_meeting(meeting_id: str, req: EncryptRequest, db: Session = Depends(
 def decrypt_meeting(meeting_id: str, req: DecryptRequest, db: Session = Depends(get_db)):
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
     if not meeting.is_encrypted:
-        raise HTTPException(400, "Meeting is not encrypted")
+        raise HTTPException(400, get_translation('errors.meeting_not_encrypted'))
 
     svc = EncryptionService
     if not svc.check_password(req.password, meeting.encryption_salt, meeting.encryption_verify):
-        raise HTTPException(403, "Wrong password")
+        raise HTTPException(403, get_translation('errors.wrong_password'))
 
     salt = base64.b64decode(meeting.encryption_salt)
     key = svc.derive_key(req.password, salt)

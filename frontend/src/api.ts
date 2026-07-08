@@ -3,6 +3,18 @@ import type { Meeting, Segment, Speaker, Job, Action, ActionResult, ModelSetting
 
 const api = axios.create({ baseURL: "/api" });
 
+export type Language = "en" | "sv";
+
+interface TranslationResponse {
+  language: Language;
+  messages: Record<string, unknown>;
+}
+
+export async function getTranslations(language: Language): Promise<Record<string, unknown>> {
+  const { data } = await api.get<TranslationResponse>(`/translations/${language}`);
+  return data.messages;
+}
+
 export async function listMeetings(): Promise<Meeting[]> {
   const { data } = await api.get("/meetings");
   return data;

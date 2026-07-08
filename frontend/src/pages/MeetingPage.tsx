@@ -16,10 +16,12 @@ import DecryptDialog from "../components/DecryptDialog";
 import ProtocolDialog from "../components/ProtocolDialog";
 import LiveRecordingBar from "../components/LiveRecordingBar";
 import { useLiveRecording } from "../hooks/useLiveRecording";
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function MeetingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const {
     currentMeeting, setCurrentMeeting,
     progress, setProgress,
@@ -91,14 +93,14 @@ export default function MeetingPage() {
       const jobs = await getJobs(id);
       const active = jobs.find((j) => j.status === "running" || j.status === "pending");
       if (active) {
-        setProgress({ type: "progress", progress: active.progress, step: active.current_step || "Processing...", status: "processing" });
+        setProgress({ type: "progress", progress: active.progress, step: active.current_step || t("progress.processing"), status: "processing" });
       }
     }
     if (m.status === "finalizing") {
       const jobs = await getJobs(id);
       const active = jobs.find((j) => j.status === "running" || j.status === "pending");
       if (active) {
-        setProgress({ type: "progress", progress: active.progress, step: active.current_step || "Finalizing...", status: "finalizing" });
+        setProgress({ type: "progress", progress: active.progress, step: active.current_step || t("live.finalizing_recording"), status: "finalizing" });
       }
     }
   }
@@ -133,7 +135,7 @@ export default function MeetingPage() {
   async function handleProcess() {
     if (!id) return;
     await startProcessing(id);
-    setProgress({ type: "progress", progress: 0, step: "Starting...", status: "processing" });
+    setProgress({ type: "progress", progress: 0, step: t("meeting_page.starting"), status: "processing" });
     loadMeeting();
   }
 
@@ -141,7 +143,7 @@ export default function MeetingPage() {
     if (!id) return;
     setShowReprocess(false);
     await rediarizeMeeting(id);
-    setProgress({ type: "progress", progress: 0, step: "Re-diarizing...", status: "processing" });
+    setProgress({ type: "progress", progress: 0, step: t("meeting_page.rediarizing"), status: "processing" });
     loadMeeting();
   }
 
@@ -149,7 +151,7 @@ export default function MeetingPage() {
     if (!id) return;
     setShowReprocess(false);
     await reidentifyMeeting(id);
-    setProgress({ type: "progress", progress: 0, step: "Re-identifying...", status: "processing" });
+    setProgress({ type: "progress", progress: 0, step: t("meeting_page.reidentifying"), status: "processing" });
     loadMeeting();
   }
 
@@ -162,7 +164,7 @@ export default function MeetingPage() {
         speakerMap.set(seg.speaker_id, {
           id: seg.speaker_id,
           label: seg.speaker_label || "",
-          name: seg.speaker_name || seg.speaker_label || "Unknown",
+          name: seg.speaker_name || seg.speaker_label || t("common.unknown_speaker"),
           color: seg.speaker_color || "#6366f1",
         });
       }
@@ -214,13 +216,13 @@ export default function MeetingPage() {
             <p className="text-sm text-slate-500 mt-0.5">
               {currentMeeting.duration ? (
                 <>
-                  {Math.floor(currentMeeting.duration / 60)}:{Math.floor(currentMeeting.duration % 60).toString().padStart(2, "0")} min
-                  {currentMeeting.speaker_count > 0 && ` \u00B7 ${currentMeeting.speaker_count} speakers`}
+                  {Math.floor(currentMeeting.duration / 60)}:{Math.floor(currentMeeting.duration % 60).toString().padStart(2, "0")} {t("live.minutes")}
+                  {currentMeeting.speaker_count > 0 && ` \u00B7 ${t("meeting_page.speakers_count", { count: currentMeeting.speaker_count })}`}
                 </>
               ) : isLiveMode && isRecording ? (
                 <>
-                  <span className="text-red-400">Live recording</span>
-                  <span className="ml-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">Beta</span>
+                  <span className="text-red-400">{t("live.live_recording")}</span>
+                  <span className="ml-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">{t("meeting_page.beta")}</span>
                 </>
               ) : null}
             </p>
@@ -237,7 +239,7 @@ export default function MeetingPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Start transcription
+                {t("meeting_page.start_transcription")}
               </span>
             </button>
           )}
@@ -246,7 +248,7 @@ export default function MeetingPage() {
               onClick={handleProcess}
               className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-medium hover:from-amber-500 hover:to-orange-500 transition-all shadow-lg shadow-amber-500/25"
             >
-              Retry
+              {t("errors.retry")}
             </button>
           )}
           {isCompleted && (
@@ -255,26 +257,26 @@ export default function MeetingPage() {
                 <button
                   onClick={() => setShowDecrypt(true)}
                   className="px-4 py-2.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl font-medium hover:bg-amber-500/30 transition-all"
-                  title="Unlock meeting"
+                  title={t("meeting.unlock")}
                 >
                   <span className="flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    Unlock
+                    {t("meeting.unlock")}
                   </span>
                 </button>
               ) : (
                 <button
                   onClick={() => setShowEncrypt(true)}
                   className="px-4 py-2.5 bg-slate-800 text-slate-400 border border-slate-700/50 rounded-xl font-medium hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-500/10 transition-all"
-                  title="Encrypt meeting"
+                  title={t("encryption.encrypt_dialog_title")}
                 >
                   <span className="flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
                     </svg>
-                    Encrypt
+                    {t("meeting.encrypt")}
                   </span>
                 </button>
               )}
@@ -284,13 +286,13 @@ export default function MeetingPage() {
                   <button
                     onClick={() => setShowReprocess(!showReprocess)}
                     className="px-4 py-2.5 bg-slate-800 text-slate-400 border border-slate-700/50 rounded-xl font-medium hover:text-white hover:border-slate-600 transition-all"
-                    title="Reprocess options"
+                    title={t("meeting_page.reprocess_options")}
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
-                      Reprocess
+                      {t("meeting.reprocess")}
                     </span>
                   </button>
                   {showReprocess && (
@@ -301,23 +303,23 @@ export default function MeetingPage() {
                         onClick={handleRediarize}
                         className="w-full text-left px-4 py-2.5 hover:bg-slate-700 transition"
                       >
-                        <div className="text-sm text-white font-medium">Re-diarize</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Re-assign speakers without re-transcribing</div>
+                        <div className="text-sm text-white font-medium">{t("meeting_page.rediarize")}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{t("meeting_page.rediarize_description")}</div>
                       </button>
                       <button
                         onClick={handleReidentify}
                         className="w-full text-left px-4 py-2.5 hover:bg-slate-700 transition"
                       >
-                        <div className="text-sm text-white font-medium">Re-identify speakers</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Re-run AI speaker naming only</div>
+                        <div className="text-sm text-white font-medium">{t("meeting_page.reidentify_speakers")}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{t("meeting_page.reidentify_description")}</div>
                       </button>
                       <div className="border-t border-slate-700 my-1" />
                       <button
                         onClick={handleProcess}
                         className="w-full text-left px-4 py-2.5 hover:bg-slate-700 transition"
                       >
-                        <div className="text-sm text-white font-medium">Full reprocess</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Re-transcribe and re-diarize everything</div>
+                        <div className="text-sm text-white font-medium">{t("meeting_page.full_reprocess")}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{t("meeting_page.full_reprocess_description")}</div>
                       </button>
                     </div>
                     </>
@@ -328,13 +330,13 @@ export default function MeetingPage() {
                 onClick={() => setShowProtocol(true)}
                 disabled={currentMeeting.is_encrypted}
                 className="px-4 py-2.5 bg-slate-800 text-slate-400 border border-slate-700/50 rounded-xl font-medium hover:text-white hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                title="Generera protokoll"
+                title={t("protocol.generate_protocol")}
               >
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Protokoll
+                  {t("protocol.protocol")}
                 </span>
               </button>
               <button
@@ -346,7 +348,7 @@ export default function MeetingPage() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  Export
+                  {t("meeting.export")}
                 </span>
               </button>
             </>
@@ -387,7 +389,7 @@ export default function MeetingPage() {
               </svg>
             </div>
             <div>
-              <p className="font-medium text-red-400">Processing failed</p>
+              <p className="font-medium text-red-400">{t("meeting_page.processing_failed")}</p>
               {progress?.error && <p className="text-red-400/70 text-sm mt-0.5">{progress.error}</p>}
             </div>
           </div>
@@ -424,8 +426,8 @@ export default function MeetingPage() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center">
             <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-300">Listening...</h3>
-          <p className="text-slate-500 mt-1 text-sm">Transcription will appear as you speak</p>
+          <h3 className="text-lg font-semibold text-slate-300">{t("meeting_page.listening")}</h3>
+          <p className="text-slate-500 mt-1 text-sm">{t("meeting_page.live_transcription_hint")}</p>
         </div>
       )}
 
@@ -437,9 +439,9 @@ export default function MeetingPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-slate-300">Meeting is encrypted</h3>
+          <h3 className="text-xl font-semibold text-slate-300">{t("meeting_page.meeting_encrypted")}</h3>
           <p className="text-slate-500 mt-2 max-w-sm mx-auto">
-            This transcript is protected with a password. Click "Unlock" to decrypt and view.
+            {t("meeting_page.meeting_encrypted_description")}
           </p>
           <button
             onClick={() => setShowDecrypt(true)}
@@ -449,7 +451,7 @@ export default function MeetingPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
               </svg>
-              Unlock meeting
+              {t("meeting.unlock")}
             </span>
           </button>
         </div>
@@ -481,7 +483,13 @@ export default function MeetingPage() {
                         : "text-slate-500 hover:text-slate-300"
                     }`}
                   >
-                    {tab === "speakers" ? "Speakers" : tab === "actions" ? "Actions" : tab === "insights" ? "Insights" : "Stats"}
+                    {tab === "speakers"
+                      ? t("meeting.speakers")
+                      : tab === "actions"
+                      ? t("meeting.actions")
+                      : tab === "insights"
+                      ? t("meeting.insights")
+                      : t("meeting.analytics")}
                   </button>
                 ))}
               </div>
@@ -516,8 +524,8 @@ export default function MeetingPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-slate-300">Ready to transcribe</h3>
-          <p className="text-slate-500 mt-2">Click "Start transcription" to begin processing</p>
+          <h3 className="text-xl font-semibold text-slate-300">{t("meeting_page.ready_to_transcribe")}</h3>
+          <p className="text-slate-500 mt-2">{t("meeting_page.ready_to_transcribe_hint")}</p>
         </div>
       )}
 

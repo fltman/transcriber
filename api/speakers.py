@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Speaker, Segment
+from translations import get_translation
 
 router = APIRouter(prefix="/api/speakers", tags=["speakers"])
 
@@ -23,7 +24,7 @@ class MergeSpeakersRequest(BaseModel):
 def update_speaker(speaker_id: str, req: UpdateSpeakerRequest, db: Session = Depends(get_db)):
     speaker = db.query(Speaker).filter(Speaker.id == speaker_id).first()
     if not speaker:
-        raise HTTPException(404, "Speaker not found")
+        raise HTTPException(404, get_translation('errors.speaker_not_found'))
 
     if req.display_name is not None:
         speaker.display_name = req.display_name
@@ -41,9 +42,9 @@ def merge_speakers(req: MergeSpeakersRequest, db: Session = Depends(get_db)):
     target = db.query(Speaker).filter(Speaker.id == req.target_id).first()
 
     if not source or not target:
-        raise HTTPException(404, "Speaker not found")
+        raise HTTPException(404, get_translation('errors.speaker_not_found'))
     if source.meeting_id != target.meeting_id:
-        raise HTTPException(400, "Speakers must be from the same meeting")
+        raise HTTPException(400, get_translation('errors.speakers_same_meeting'))
 
     # Move all segments from source to target
     db.query(Segment).filter(Segment.speaker_id == source.id).update(

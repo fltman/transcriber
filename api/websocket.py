@@ -15,11 +15,12 @@ router = APIRouter()
 @router.websocket("/ws/meetings/{meeting_id}")
 async def meeting_websocket(websocket: WebSocket, meeting_id: str):
     # Validate meeting exists before accepting connection
+    from translations import get_translation
     db = SessionLocal()
     try:
         meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
         if not meeting:
-            await websocket.close(code=4004, reason="Meeting not found")
+            await websocket.close(code=4004, reason=get_translation('errors.meeting_not_found'))
             return
     finally:
         db.close()

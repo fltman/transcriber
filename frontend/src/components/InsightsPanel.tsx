@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
 import { listInsights, extractInsights, updateInsight, deleteInsight } from "../api";
 import type { MeetingInsight } from "../api";
+import { useTranslation } from "../hooks/useTranslation";
 
 interface Props {
   meetingId: string;
 }
 
-const TYPE_CONFIG = {
-  decision: { label: "Beslut", icon: "scale", color: "emerald" },
-  action_item: { label: "Atgard", icon: "check", color: "violet" },
-  open_question: { label: "Fraga", icon: "question", color: "amber" },
-};
-
 export default function InsightsPanel({ meetingId }: Props) {
+  const { t } = useTranslation();
   const [insights, setInsights] = useState<MeetingInsight[]>([]);
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
@@ -73,7 +69,7 @@ export default function InsightsPanel({ meetingId }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-300">Insights</h3>
+        <h3 className="text-sm font-semibold text-slate-300">{t("insights.insights")}</h3>
         <button
           onClick={handleExtract}
           disabled={extracting}
@@ -82,12 +78,12 @@ export default function InsightsPanel({ meetingId }: Props) {
           {extracting ? (
             <>
               <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Analyserar...
+              {t("insights.analyzing")}
             </>
           ) : insights.length > 0 ? (
-            "Analysera igen"
+            t("insights.analyze_again")
           ) : (
-            "Extrahera insights"
+            t("insights.extract")
           )}
         </button>
       </div>
@@ -100,7 +96,7 @@ export default function InsightsPanel({ meetingId }: Props) {
 
       {!loading && insights.length === 0 && !extracting && (
         <p className="text-xs text-slate-600 text-center py-4">
-          Klicka "Extrahera insights" for att analysera motet med AI.
+          {t("insights.empty_state", { action: t("insights.extract") })}
         </p>
       )}
 
@@ -109,7 +105,7 @@ export default function InsightsPanel({ meetingId }: Props) {
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-xs font-medium text-emerald-400">Beslut ({decisions.length})</span>
+            <span className="text-xs font-medium text-emerald-400">{t("insights.decisions")} ({decisions.length})</span>
           </div>
           <div className="space-y-1.5">
             {decisions.map((d) => (
@@ -124,7 +120,7 @@ export default function InsightsPanel({ meetingId }: Props) {
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <div className="w-2 h-2 rounded-full bg-violet-500" />
-            <span className="text-xs font-medium text-violet-400">Atgardspunkter ({actions.length})</span>
+            <span className="text-xs font-medium text-violet-400">{t("insights.actions")} ({actions.length})</span>
           </div>
           <div className="space-y-1.5">
             {actions.map((a) => (
@@ -139,7 +135,7 @@ export default function InsightsPanel({ meetingId }: Props) {
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
-            <span className="text-xs font-medium text-amber-400">Oppna fragor ({questions.length})</span>
+            <span className="text-xs font-medium text-amber-400">{t("insights.questions")} ({questions.length})</span>
           </div>
           <div className="space-y-1.5">
             {questions.map((q) => (

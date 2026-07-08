@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
 from models import Meeting, Segment
+from translations import get_translation
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["segments"])
@@ -36,11 +37,11 @@ def list_segments(meeting_id: str, db: Session = Depends(get_db)):
 def update_segment_text(segment_id: str, req: UpdateSegmentTextRequest, db: Session = Depends(get_db)):
     segment = db.query(Segment).filter(Segment.id == segment_id).first()
     if not segment:
-        raise HTTPException(404, "Segment not found")
+        raise HTTPException(404, get_translation('errors.segment_not_found'))
 
     meeting = db.query(Meeting).filter(Meeting.id == segment.meeting_id).first()
     if meeting and meeting.is_encrypted:
-        raise HTTPException(400, "Cannot edit segments while meeting is encrypted. Decrypt first.")
+        raise HTTPException(400, get_translation('errors.cannot_edit_encrypted_meeting'))
 
     old_text = segment.original_text or segment.text
     segment.text = req.text
@@ -57,11 +58,11 @@ def update_segment_text(segment_id: str, req: UpdateSegmentTextRequest, db: Sess
 def update_segment_speaker(segment_id: str, req: UpdateSegmentSpeakerRequest, db: Session = Depends(get_db)):
     segment = db.query(Segment).filter(Segment.id == segment_id).first()
     if not segment:
-        raise HTTPException(404, "Segment not found")
+        raise HTTPException(404, get_translation('errors.segment_not_found'))
 
     meeting = db.query(Meeting).filter(Meeting.id == segment.meeting_id).first()
     if meeting and meeting.is_encrypted:
-        raise HTTPException(400, "Cannot edit segments while meeting is encrypted. Decrypt first.")
+        raise HTTPException(400, get_translation('errors.cannot_edit_encrypted_meeting'))
 
     segment.speaker_id = req.speaker_id
     db.commit()

@@ -8,33 +8,11 @@ from models import Meeting, Segment, Speaker, MeetingInsight, InsightType
 from models.job import Job, JobStatus
 from services.llm_service import LLMService
 from model_config import get_model_config
+from translations import get_translation
 
 log = logging.getLogger(__name__)
 
 MAX_TRANSCRIPT_CHARS = 15000
-
-EXTRACTION_PROMPT = """Du ar en motesanalytiker. Analysera transkriberingen och extrahera:
-
-1. **Beslut** - Konkreta beslut som fattades under motet
-2. **Atgardspunkter** - Uppgifter som nagon ska utfora, med ansvarig person om det framgar
-3. **Oppna fragor** - Fragor som diskuterades men inte fick nagot svar eller beslut
-
-Svara ENBART med JSON i detta format:
-{
-  "decisions": [
-    {"content": "Beskrivning av beslutet", "timestamp": 123.4}
-  ],
-  "action_items": [
-    {"content": "Vad som ska goras", "assignee": "Personnamn eller null", "timestamp": 234.5}
-  ],
-  "open_questions": [
-    {"content": "Fragan som ar olost", "timestamp": 345.6}
-  ]
-}
-
-Tidsstamplar (timestamp) ska vara i sekunder fran start, matcha den narmaste tidsstampeln i transkriberingen.
-Om du inte hittar nagra av en kategori, returnera en tom lista.
-Skriv pa svenska. Svara ENBART med JSON."""
 
 
 @celery_app.task(bind=True, time_limit=180)
@@ -72,14 +50,15 @@ def extract_insights_task(self, meeting_id: str, job_id: str):
             lines.append(f"[{ts}] [{speaker}]: {seg.text}")
 
         transcript_text = "\n".join(lines)
+        truncation_msg = get_translation('ui.transcription_truncated')
         if len(transcript_text) > MAX_TRANSCRIPT_CHARS:
-            transcript_text = transcript_text[:MAX_TRANSCRIPT_CHARS] + "\n\n[...transkribering trunkerad...]"
+            transcript_text = transcript_text[:MAX_TRANSCRIPT_CHARS] + f"\n\n[...{truncation_msg}...]"
 
         # Call LLM
         preset = get_model_config().get_model_for_task("actions")
         llm = LLMService(preset=preset)
         messages = [
-            {"role": "system", "content": EXTRACTION_PROMPT},
+            {"role": "system", "content": get_translation('prompts.insights_extraction')},
             {"role": "user", "content": f"Motestitel: {meeting.title}\n\nTranskribering:\n{transcript_text}"},
         ]
 

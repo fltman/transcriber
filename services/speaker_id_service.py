@@ -89,12 +89,15 @@ class SpeakerIdService:
 
     def identify_speakers_model3(self, speaker_labels: list[str]) -> dict[str, dict]:
         """
-        Model 3 (fallback): Label speakers as Deltagare 1, 2, etc.
+        Model 3 (fallback): Label speakers as Participant 1, 2, etc.
         """
+        from translations import get_translation
+        
         result = {}
+        participant = get_translation('common.participant')
         for i, label in enumerate(sorted(set(speaker_labels))):
             result[label] = {
-                "name": f"Deltagare {i + 1}",
+                "name": f"{participant} {i + 1}",
                 "confidence": None,
                 "identified_by": None,
             }

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import VocabularyEntry
+from translations import get_translation
 
 router = APIRouter(prefix="/api/vocabulary", tags=["vocabulary"])
 
@@ -17,7 +18,7 @@ def list_vocabulary(db: Session = Depends(get_db)):
 def delete_entry(entry_id: str, db: Session = Depends(get_db)):
     entry = db.query(VocabularyEntry).filter(VocabularyEntry.id == entry_id).first()
     if not entry:
-        raise HTTPException(404, "Entry not found")
+        raise HTTPException(404, get_translation('errors.entry_not_found'))
     db.delete(entry)
     db.commit()
     return {"ok": True}

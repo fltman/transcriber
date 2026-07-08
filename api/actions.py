@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Action, ActionResult, ActionResultStatus, Meeting
 from tasks.action_task import run_action_task
+from translations import get_translation
 
 router = APIRouter(prefix="/api/actions", tags=["actions"])
 
@@ -40,7 +41,7 @@ def create_action(req: CreateActionRequest, db: Session = Depends(get_db)):
 def update_action(action_id: str, req: UpdateActionRequest, db: Session = Depends(get_db)):
     action = db.query(Action).filter(Action.id == action_id).first()
     if not action:
-        raise HTTPException(404, "Action not found")
+        raise HTTPException(404, get_translation('errors.action_not_found'))
     if req.name is not None:
         action.name = req.name
     if req.prompt is not None:
@@ -54,7 +55,7 @@ def update_action(action_id: str, req: UpdateActionRequest, db: Session = Depend
 def delete_action(action_id: str, db: Session = Depends(get_db)):
     action = db.query(Action).filter(Action.id == action_id).first()
     if not action:
-        raise HTTPException(404, "Action not found")
+        raise HTTPException(404, get_translation('errors.action_not_found'))
     db.delete(action)
     db.commit()
     return {"ok": True}
@@ -66,11 +67,11 @@ def delete_action(action_id: str, db: Session = Depends(get_db)):
 def run_action(action_id: str, meeting_id: str, db: Session = Depends(get_db)):
     action = db.query(Action).filter(Action.id == action_id).first()
     if not action:
-        raise HTTPException(404, "Action not found")
+        raise HTTPException(404, get_translation('errors.action_not_found'))
 
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
 
     result = ActionResult(
         action_id=action_id,
@@ -87,9 +88,10 @@ def run_action(action_id: str, meeting_id: str, db: Session = Depends(get_db)):
         db.commit()
     except Exception as e:
         result.status = ActionResultStatus.FAILED
-        result.error = f"Failed to queue task: {e}"
+        error_msg = get_translation('errors.failed_to_queue_task').format(error=e)
+        result.error = error_msg
         db.commit()
-        raise HTTPException(503, f"Task queue unavailable: {e}")
+        raise HTTPException(503, get_translation('errors.task_queue_unavailable').format(error=e))
 
     return result.to_dict()
 
@@ -112,7 +114,7 @@ def list_results(meeting_id: str, db: Session = Depends(get_db)):
     for r in results:
         d = r.to_dict()
         a = actions.get(r.action_id)
-        d["action_name"] = a.name if a else "Deleted action"
+        d["action_name"] = a.name if a else get_translation('ui.deleted_action')
         out.append(d)
     return out
 
@@ -121,7 +123,7 @@ def list_results(meeting_id: str, db: Session = Depends(get_db)):
 def delete_result(result_id: str, db: Session = Depends(get_db)):
     result = db.query(ActionResult).filter(ActionResult.id == result_id).first()
     if not result:
-        raise HTTPException(404, "Result not found")
+        raise HTTPException(404, get_translation('errors.result_not_found'))
     db.delete(result)
     db.commit()
     return {"ok": True}

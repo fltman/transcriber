@@ -1,0 +1,418 @@
+{
+  "app": {
+    "title": "Transcriber",
+    "tagline": "AI-powered transcription",
+    "settings": "Model settings"
+  },
+  "common": {
+    "unknown_speaker": "Unknown",
+    "participant": "Participant",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "close": "Close",
+    "remove": "Remove",
+    "add": "Add",
+    "edit": "Edit",
+    "search": "Search",
+    "no_results": "No results found",
+    "confirm": "Confirm",
+    "password": "Password",
+    "confirm_password": "Confirm password",
+    "submit": "Submit"
+  },
+  "meetings": {
+    "title": "Meetings",
+    "new_meeting": "New Meeting",
+    "upload_audio": "Upload Audio",
+    "record_live": "Record Live",
+    "live_mode": "Live Mode",
+    "search_placeholder": "Search across all meetings...",
+    "status": {
+      "uploading": "Uploading",
+      "uploaded": "Uploaded",
+      "processing": "Processing",
+      "recording": "Recording",
+      "finalizing": "Finalizing",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "no_meetings": "No meetings yet",
+    "create_first": "Create your first meeting by uploading an audio file or starting a live recording"
+  },
+  "meeting": {
+    "title": "Title for the transcription",
+    "speakers": "Speakers",
+    "segments": "Segments",
+    "duration": "Duration",
+    "model": "Model",
+    "reprocess": "Reprocess",
+    "reprocess_description": "Re-run the AI analysis on this meeting",
+    "encrypt": "Encrypt",
+    "decrypt": "Decrypt",
+    "unlock": "Unlock meeting",
+    "export": "Export",
+    "actions": "Actions",
+    "insights": "Insights",
+    "analytics": "Analytics",
+    "transcript": "Transcript"
+  },
+  "meeting_page": {
+    "starting": "Starting...",
+    "rediarizing": "Re-diarizing...",
+    "reidentifying": "Re-identifying...",
+    "speakers_count": "%count% speakers",
+    "beta": "Beta",
+    "start_transcription": "Start transcription",
+    "reprocess_options": "Reprocess options",
+    "rediarize": "Re-diarize",
+    "rediarize_description": "Re-assign speakers without re-transcribing",
+    "reidentify_speakers": "Re-identify speakers",
+    "reidentify_description": "Re-run AI speaker naming only",
+    "full_reprocess": "Full reprocess",
+    "full_reprocess_description": "Re-transcribe and re-diarize everything",
+    "processing_failed": "Processing failed",
+    "listening": "Listening...",
+    "live_transcription_hint": "Transcription will appear as you speak",
+    "meeting_encrypted": "Meeting is encrypted",
+    "meeting_encrypted_description": "This transcript is protected with a password. Click \"Unlock\" to decrypt and view.",
+    "ready_to_transcribe": "Ready to transcribe",
+    "ready_to_transcribe_hint": "Click \"Start transcription\" to begin processing"
+  },
+  "encryption": {
+    "encrypt": "Encrypt",
+    "decrypt": "Decrypt",
+    "password_required": "Password required",
+    "passwords_match": "Passwords must match",
+    "passwords_do_not_match": "Passwords do not match",
+    "encryption_failed": "Encryption failed",
+    "decryption_failed": "Decryption failed",
+    "wrong_password": "Wrong password",
+    "encrypt_dialog_title": "Encrypt Meeting",
+    "encrypt_dialog_description": "Enter a password to encrypt this meeting",
+    "decrypt_dialog_title": "Decrypt Meeting",
+    "decrypt_dialog_description": "Enter the password to unlock this meeting"
+  },
+  "export": {
+    "title": "Export Meeting",
+    "choose_format": "Choose export format",
+    "formats": {
+      "docx": {
+        "label": "Word Document",
+        "description": "Full transcript with speaker formatting"
+      },
+      "pdf": {
+        "label": "PDF",
+        "description": "Complete transcript with formatting"
+      },
+      "txt": {
+        "label": "Plain Text",
+        "description": "Simple text format for easy sharing"
+      },
+      "srt": {
+        "label": "Subtitle File",
+        "description": "SRT format for video players"
+      },
+      "vtt": {
+        "label": "WebVTT Subtitle",
+        "description": "VTT format for web video"
+      },
+      "json": {
+        "label": "JSON Format",
+        "description": "Structured data with segments and speakers"
+      },
+      "csv": {
+        "label": "CSV Spreadsheet",
+        "description": "Segments with timestamps and speakers"
+      },
+      "markdown": {
+        "label": "Markdown",
+        "description": "Formatted text with speaker names"
+      },
+      "docx_summary": {
+        "label": "Word with Summary",
+        "description": "Transcript plus generated summary"
+      },
+      "pdf_summary": {
+        "label": "PDF with Summary",
+        "description": "Transcript plus generated summary"
+      },
+      "docx_actions": {
+        "label": "Word with Actions",
+        "description": "Transcript with identified action items"
+      },
+      "pdf_actions": {
+        "label": "PDF with Actions",
+        "description": "Transcript with identified action items"
+      },
+      "docx_protocol": {
+        "label": "Word Protocol",
+        "description": "Formal meeting protocol format"
+      },
+      "pdf_protocol": {
+        "label": "PDF Protocol",
+        "description": "Formal meeting protocol format"
+      }
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "models": "Models",
+    "preferences": "Preferences",
+    "api_keys": "API Keys",
+    "speaker_profiles": "Speaker Profiles",
+    "vocabulary": "Vocabulary",
+    "language": "Language",
+    "tasks": {
+      "actions": {
+        "label": "Actions",
+        "description": "Custom actions on transcripts"
+      },
+      "analysis": {
+        "label": "Analysis",
+        "description": "Intro detection, speaker ID, finalization"
+      },
+      "live": {
+        "label": "Live polish",
+        "description": "Speaker naming during live sessions"
+      },
+      "transcription": {
+        "label": "Transcription",
+        "description": "Whisper model for batch processing"
+      },
+      "live_transcription": {
+        "label": "Live transcription",
+        "description": "Whisper model for live sessions"
+      }
+    },
+    "speaker_profiles_enabled": "Enable speaker profiles",
+    "default_vocabulary": "Default vocabulary",
+    "hf_token": "Hugging Face token",
+    "openrouter_key": "OpenRouter API key",
+    "delete_profile": "Delete voice profile",
+    "delete_profile_confirm": "Delete voice profile \"%s\"? This cannot be undone."
+  },
+  "speakers": {
+    "speakers": "Speakers",
+    "speaker": "Speaker",
+    "unknown": "Unknown Speaker",
+    "identify": "Identify",
+    "merge": "Merge",
+    "speaking_time": "Speaking time",
+    "segments": "segments",
+    "profile": "Voice profile",
+    "use_profile": "Use speaker profile",
+    "disable_profile": "Disable profile"
+  },
+  "insights": {
+    "insights": "Insights",
+    "summary": "Summary",
+    "actions": "Action Items",
+    "decisions": "Decisions",
+    "questions": "Open Questions",
+    "extract": "Extract insights",
+    "analyze_again": "Analyze again",
+    "analyzing": "Analyzing...",
+    "empty_state": "Click \"%action%\" to analyze this meeting with AI.",
+    "generate": "Generate",
+    "generating": "Generating...",
+    "view_results": "View results"
+  },
+  "actions": {
+    "actions": "Actions",
+    "custom_actions": "Custom actions on transcripts",
+    "run": "Run",
+    "running": "Running...",
+    "results": "Results",
+    "result": "Result",
+    "status": {
+      "pending": "Pending",
+      "running": "Running",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "view": "View",
+    "delete": "Delete",
+    "show_results": "Show action results"
+  },
+  "audio": {
+    "microphone": "Microphone",
+    "system_audio": "System audio",
+    "select_audio_source": "Select audio source",
+    "stop": "Stop",
+    "start": "Start",
+    "pause": "Pause",
+    "resume": "Resume",
+    "recording": "Recording",
+    "speed": "Speed",
+    "volume": "Volume"
+  },
+  "progress": {
+    "processing": "Processing...",
+    "transcription": "Transcription",
+    "audio": "Audio",
+    "ai_analysis": "AI Analysis",
+    "diarization": "Diarization",
+    "alignment": "Alignment",
+    "identification": "Identification",
+    "polish": "Polish",
+    "finalize": "Finalize",
+    "step": "Step %d of %d",
+    "percent": "%d%%",
+    "extracting_audio": "Extracting audio...",
+    "audio_extracted": "Audio extracted",
+    "calculating_audio_duration": "Calculating audio duration...",
+    "transcribing_whisper": "Transcribing with Whisper...",
+    "transcribing_high_quality_model": "Transcribing with high-quality model...",
+    "transcription_complete": "Transcription complete",
+    "analyzing_intro_ai": "Analyzing introductions with AI...",
+    "found_participants_prefix": "Found participants:",
+    "found_participants_intro_end_prefix": "intro ended at",
+    "rerunning_diarization": "Re-running diarization...",
+    "identifying_speakers_diarization": "Identifying speakers (diarization)...",
+    "full_speaker_identification": "Full speaker identification...",
+    "diarization_complete": "Diarization complete",
+    "aligning_speakers_text": "Aligning speakers with text...",
+    "alignment_complete": "Alignment complete",
+    "identifying_speakers": "Identifying speakers...",
+    "reidentifying_speakers_ai": "Re-identifying speakers with AI...",
+    "analyzing_presentations_ai": "Analyzing presentations with AI...",
+    "matching_saved_voice_profiles": "Matching against saved voice profiles...",
+    "saving_results": "Saving results...",
+    "saving_final_results": "Saving final results...",
+    "finalizing_high_quality_message": "Finalizing transcription with high-quality model...",
+    "done": "Done!"
+  },
+  "analytics": {
+    "speaker_analytics": "Speaker Analytics",
+    "talaranalys": "Talaranalys",
+    "total_speakers": "Total speakers",
+    "total_time": "Total time",
+    "average_speed": "Average speed",
+    "words_per_minute": "words/min"
+  },
+  "diarization": {
+    "mlx_ignores_speaker_constraints": "MLX diarization backend ignores min_speakers/max_speakers constraints"
+  },
+  "protocol": {
+    "generate_protocol": "Generate Protocol",
+    "protocol": "Protocol",
+    "generating": "Generating protocol...",
+    "title": "Formal meeting protocol",
+    "description": "A formal meeting protocol for public sector meetings",
+    "dialog_description": "AI analyzes the transcript and creates a formal protocol with attendees, agenda, decisions, and paragraph numbering.",
+    "generating_hint": "This can take up to a minute",
+    "preview": "Preview",
+    "regenerate": "Regenerate",
+    "copy": "Copy",
+    "download_docx": "Download DOCX",
+    "exporting": "Exporting...",
+    "generate_failed": "Could not generate protocol",
+    "export_failed": "Could not export DOCX",
+    "download_file_prefix": "Protocol"
+  },
+  "transcript": {
+    "transcript": "Transcript",
+    "edit": "Edit",
+    "save_changes": "Save changes",
+    "discard": "Discard",
+    "edited": "Edited",
+    "jump_to": "Jump to",
+    "timestamp": "Timestamp",
+    "word_count": "Word count",
+    "truncated": "transcription truncated"
+  },
+  "errors": {
+    "something_went_wrong": "Something went wrong",
+    "please_try_again": "Please try again",
+    "failed": "Failed",
+    "retry": "Retry",
+    "network_error": "Network error",
+    "server_error": "Server error",
+    "action_not_found": "Action not found",
+    "action_result_has_no_content": "Action result has no content",
+    "action_result_not_found": "Action result not found",
+    "failed_to_queue_task": "Failed to queue task: %error%",
+    "meeting_already_encrypted": "Meeting is already encrypted",
+    "meeting_not_encrypted": "Meeting is not encrypted",
+    "meeting_not_completed": "Meeting must be completed first",
+    "meeting_not_found": "Meeting not found",
+    "password_required": "Password is required",
+    "result_not_found": "Result not found",
+   "polish": {
+     "no_segments": "no segments",
+     "failed_prefix": "Polish pass failed"
+   },
+    "task_queue_unavailable": "Task queue unavailable: %error%",
+    "unknown_format": "Unknown format: %format%",
+    "wrong_password": "Wrong password",
+    "insight_not_found": "Insight not found",
+    "invalid_status": "Invalid status: %status%",
+    "no_transcript_segments": "No transcript segments found",
+    "no_protocol_text": "No protocol text provided",
+    "title_required": "Title is required",
+    "unsupported_file_type": "Unsupported file type '%ext%'. Allowed: %extensions%",
+    "min_speakers_invalid": "min_speakers must be at least 1",
+    "max_speakers_invalid": "max_speakers must be at least 1",
+    "min_max_speakers_order": "min_speakers cannot exceed max_speakers",
+    "already_processing": "Already processing",
+    "meeting_already_processing": "Meeting is already being processed",
+    "no_transcription_data": "No transcription data. Run full processing first.",
+    "no_transcription_diarization_data": "No transcription/diarization data. Run full processing first.",
+    "file_too_large": "File too large. Maximum size is %max_gb% GB",
+    "segment_not_found": "Segment not found",
+    "cannot_edit_encrypted_meeting": "Cannot edit segments while meeting is encrypted. Decrypt first.",
+    "profile_not_found": "Profile not found",
+    "speaker_not_found": "Speaker not found",
+    "meeting_or_audio_not_found": "Meeting or audio not found",
+    "speaker_no_segments": "Speaker has no segments",
+    "no_valid_audio_segments": "No valid audio segments for this speaker",
+    "speakers_same_meeting": "Speakers must be from the same meeting",
+    "entry_not_found": "Entry not found",
+    "meeting_or_job_not_found": "Meeting or job not found",
+    "task_time_limit_exceeded": "Task exceeded time limit (55 minutes). Try a shorter recording."
+  },
+  "live": {
+    "live_recording": "Live recording",
+    "stop_recording": "Stop recording",
+    "finalizing_recording": "Finalizing recording...",
+    "recording_complete": "Recording complete",
+    "minutes": "minutes",
+    "websocket_meeting_not_found": "Meeting not found or not in live mode",
+    "websocket_finalizing": "Finalizing transcription..."
+  },
+  "prompts": {
+    "summary": "You are a meeting assistant. Write a clear and concise summary of the meeting. Include: main topics discussed, important decisions made, and any open questions. Write in English.",
+    "todo": "You are a meeting assistant. Create a structured action item list from the meeting. For each action, specify:\n- What needs to be done\n- Who is responsible (if clear)\n- Deadline (if mentioned)\n\nFormat as a numbered list. Write in English.",
+    "deidentified": "You are a privacy specialist. Rewrite the transcript so that all personal names are replaced with 'Person A', 'Person B', 'Person C', etc. Also replace organization names, locations, and other identifying details with generic terms. Keep the content intact. Write in English.",
+    "protocol": "You are a professional meeting protocol writer for the public sector. Create a formal meeting protocol based on the transcript below.\n\nThe protocol should follow standard public sector format with the following structure:\n\n1. **Title** - Protocol from [type of meeting]\n2. **Date and time** - If available, otherwise use what you know\n3. **Attendees** - List all participants (use names from the transcript)\n4. **Agenda** - Identify agenda points from what was discussed\n5. **Numbered sections** - Numbered sections (§1, §2, etc.) with:\n   - Title for each point\n   - Brief summary of discussion\n   - Any DECISIONS clearly marked\n   - Any ACTION ITEMS with responsible person\n6. **Signature block** - Space for signatures\n\nWrite in correct English. Be concise but complete. Mark decisions with 'DECISION:' and action items with 'ACTION:'. Answer with plain text (not JSON), formatted with markdown.",
+    "intro_analysis": "Analyze this transcript from the beginning of a meeting. Identify which people introduce themselves and map their names to their speaker labels.\n\nTranscript:\n%intro_text%\n\nAnswer ONLY with a JSON array in this format:\n[\n  {\"speaker_label\": \"SPEAKER_00\", \"name\": \"First Last\"},\n  {\"speaker_label\": \"SPEAKER_01\", \"name\": \"First Last\"}\n]\n\nIf you cannot identify any names, answer with an empty array: []\nAnswer ONLY with JSON, no other text.",
+    "intro_iterative": "You are a meeting analyst. You will receive a meeting transcript in chunks. Your task is to identify the introduction phase, the part where participants present themselves. For each new chunk, decide whether introductions are still ongoing or the meeting has moved on to other content.\n\nAlways answer with JSON in exactly this format:\n{\"intro_ongoing\": true/false, \"speaker_count\": <number of unique participants so far>, \"names\": [\"name1\", \"name2\"], \"reasoning\": \"brief explanation\"}",
+    "intro_iterative_chunk": "Chunk {chunk_number} (time {start_time}s - {end_time}s):\n{chunk_text}\n\nAre introductions still ongoing? How many unique participants have you identified so far?",
+    "speaker_name": "You are analyzing a meeting transcript with %num_speakers% participants. Each speaker has a label (Speaker 1, Speaker 2, etc.). Identify EACH speaker's name based on:\n- Introductions: 'my name is...', 'I am...'\n- When others address them by name\n- Clues from what they say about themselves\n\n%speaker_blocks%\n\nIMPORTANT:\n- Each speaker MUST get a UNIQUE name\n- If you cannot identify a name, use 'Participant N' (e.g., 'Participant 1', 'Participant 2')\n- NEVER use 'Speaker N' as a name\n- Give EVERY speaker a name, not just some\n\nAnswer ONLY with JSON:\n{\"speakers\": [{\"label\": \"Speaker 1\", \"name\": \"First\"}, {\"label\": \"Speaker 2\", \"name\": \"First\"}]}",
+    "insights_extraction": "You are a meeting analyst. Analyze the transcript and extract:\n\n1. **Decisions** - Concrete decisions made during the meeting\n2. **Action items** - Tasks someone should do, with responsible person if clear\n3. **Open questions** - Questions discussed but not answered or decided\n\nAnswer ONLY with JSON in this format:\n{\n  \"decisions\": [\n    {\"content\": \"Description of decision\", \"timestamp\": 123.4}\n  ],\n  \"action_items\": [\n    {\"content\": \"What needs to be done\", \"assignee\": \"Person name or null\", \"timestamp\": 234.5}\n  ],\n  \"open_questions\": [\n    {\"content\": \"Unanswered question\", \"timestamp\": 345.6}\n  ]\n}\n\nTimestamps should be in seconds from start, matching the nearest timestamp in the transcript. If you don't find any of a category, return an empty list. Write in English. Answer ONLY with JSON."
+  },
+  "labels": {
+    "protocol_title": "Meeting title",
+    "protocol_date": "Date",
+    "protocol_duration": "Duration",
+    "protocol_participants": "Participants",
+    "protocol_transcript": "Transcript"
+  },
+  "ui": {
+    "unknown_speaker": "Unknown",
+    "transcription_truncated": "transcription truncated",
+    "action": "Action",
+    "summary": "Summary",
+    "todo": "To-Do List",
+    "meeting": "Meeting",
+    "deidentified_version": "De-identified version",
+    "analyzing_chunk_progress": "Analyzing chunk {chunk_number}/{total_chunks} ({end_time}s)...",
+    "intro_speaker_prefix": "Speaker",
+    "duration_minutes": "minutes",
+    "deleted_action": "Deleted action"
+  }
+}

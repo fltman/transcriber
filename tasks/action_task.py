@@ -7,6 +7,7 @@ from database import SessionLocal
 from models import Meeting, Segment, Speaker, Action, ActionResult, ActionResultStatus
 from services.llm_service import LLMService
 from model_config import get_model_config
+from translations import get_translation
 
 log = logging.getLogger(__name__)
 
@@ -21,12 +22,12 @@ def run_action_task(self, action_result_id: str):
     try:
         result = db.query(ActionResult).filter(ActionResult.id == action_result_id).first()
         if not result:
-            return {"error": "ActionResult not found"}
+            return {"error": get_translation('errors.action_result_not_found')}
 
         action = db.query(Action).filter(Action.id == result.action_id).first()
         meeting = db.query(Meeting).filter(Meeting.id == result.meeting_id).first()
         if not action or not meeting:
-            return {"error": "Action or Meeting not found"}
+            return {"error": get_translation('errors.action_not_found')}
 
         result.status = ActionResultStatus.RUNNING
         result.celery_task_id = self.request.id
@@ -48,7 +49,7 @@ def run_action_task(self, action_result_id: str):
         )
 
         if not segments:
-            raise ValueError("No transcript segments found for this meeting")
+            raise ValueError(get_translation("errors.no_transcript_segments"))
 
         # Build speaker lookup
         speakers = db.query(Speaker).filter(Speaker.meeting_id == meeting.id).all()
@@ -56,12 +57,19 @@ def run_action_task(self, action_result_id: str):
 
         lines = []
         for seg in segments:
-            speaker = speaker_map.get(seg.speaker_id, "Unknown") if seg.speaker_id else "Unknown"
+            speaker = (
+                speaker_map.get(seg.speaker_id, get_translation("common.unknown_speaker"))
+                if seg.speaker_id
+                else get_translation("common.unknown_speaker")
+            )
             lines.append(f"[{speaker}]: {seg.text}")
 
         transcript_text = "\n".join(lines)
         if len(transcript_text) > MAX_TRANSCRIPT_CHARS:
-            transcript_text = transcript_text[:MAX_TRANSCRIPT_CHARS] + "\n\n[...transkribering trunkerad...]"
+            transcript_text = (
+                transcript_text[:MAX_TRANSCRIPT_CHARS]
+                + f"\n\n[...{get_translation('ui.transcription_truncated')}...]"
+            )
 
         # Call LLM (with model preset for "actions" task)
         preset = get_model_config().get_model_for_task("actions")
@@ -73,7 +81,10 @@ def run_action_task(self, action_result_id: str):
             },
             {
                 "role": "user",
-                "content": f"Motestitel: {meeting.title}\n\nTranskribering:\n{transcript_text}",
+                "content": (
+                    f"{get_translation('ui.meeting')}: {meeting.title}\n\n"
+                    f"{get_translation('labels.protocol_transcript')}:\n{transcript_text}"
+                ),
             },
         ]
 

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Meeting, Speaker, Segment
+from translations import get_translation
 
 router = APIRouter(prefix="/api", tags=["analytics"])
 
@@ -11,7 +12,7 @@ router = APIRouter(prefix="/api", tags=["analytics"])
 def get_meeting_analytics(meeting_id: str, db: Session = Depends(get_db)):
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(404, "Meeting not found")
+        raise HTTPException(404, get_translation('errors.meeting_not_found'))
 
     speakers = db.query(Speaker).filter(Speaker.meeting_id == meeting_id).all()
     segments = (
